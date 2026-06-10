@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  externalId    String?   @unique
+  title         String
+  summary       String?
+  keywords      String?   // JSON array stored as string
+  isFavorite    Boolean   @default(false)
+  createdAt     DateTime
+  updatedAt     DateTime
+  importedAt    DateTime  @default(now())
+  messageCount  Int       @default(0)
+  importBatchId String?
+
+  messages     Message[]
+  projects     ConversationProject[]
+  prompts      PromptItem[]
+  codeSnippets CodeSnippet[]
+  tags         ConversationTag[]
+  importBatch  ImportBatch? @relation(fields: [importBatchId], references: [id])
+
+  @@index([createdAt])
+  @@index([externalId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String       // "user" | "assistant" | "system"
+  content        String
+  createdAt      DateTime?
+  orderIndex     Int
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model Project {
+  id        String               @id @default(cuid())
+  name      String               @unique
+  summary   String?
+  category  String               // "code" | "course" | "prompt" | "creative" | "research" | "business" | "data" | "design" | "other"
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  conversations ConversationProject[]
+
+  @@index([category])
+}
+
+model ConversationProject {
+  conversationId String
+  projectId      String
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, projectId])
+}
+
+model PromptItem {
+  id             String       @id @default(cuid())
+  conversationId String
+  messageId      String?
+  title          String?
+  content        String
+  tags           String?      // JSON array stored as string
+  isFavorite     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model CodeSnippet {
+  id             String       @id @default(cuid())
+  conversationId String
+  messageId      String?
+  language       String?
+  code           String
+  description    String?
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([language])
+}
+
+model Tag {
+  id               String              @id @default(cuid())
+  name             String              @unique
+  conversationTags ConversationTag[]
+}
+
+model ConversationTag {
+  conversationId String
+  tagId          String
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, tagId])
+}
+
+model ImportBatch {
+  id                String   @id @default(cuid())
+  source            String   // "claude-export" | "backup"
+  fileName          String?
+  conversationCount Int      @default(0)
+  messageCount      Int      @default(0)
+  status            String   @default("completed") // "pending" | "processing" | "completed" | "failed"
+  errorLog          String?
+  createdAt         DateTime @default(now())
+
+  conversations Conversation[]
+
+  @@index([createdAt])
+  @@index([status])
+}
