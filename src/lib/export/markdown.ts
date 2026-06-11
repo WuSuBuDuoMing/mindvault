@@ -4,6 +4,9 @@
  * Export conversations and projects to Markdown format.
  */
 
+/**
+ * Shape of a single conversation ready for Markdown export.
+ */
 export interface ConversationExportData {
   title: string
   summary?: string | null
@@ -26,6 +29,9 @@ export interface ConversationExportData {
   }[]
 }
 
+/**
+ * Shape of a project with its conversations for Markdown export.
+ */
 export interface ProjectExportData {
   name: string
   summary?: string | null
@@ -34,7 +40,11 @@ export interface ProjectExportData {
 }
 
 /**
- * Export a single conversation to Markdown
+ * Render a single conversation as a Markdown document with metadata,
+ * message transcript, extracted prompts, and code snippets.
+ *
+ * @param data - Conversation export payload
+ * @returns Markdown-formatted string
  */
 export function exportConversationToMarkdown(data: ConversationExportData): string {
   const lines: string[] = []
@@ -107,7 +117,11 @@ export function exportConversationToMarkdown(data: ConversationExportData): stri
 }
 
 /**
- * Export a project with all its conversations to Markdown
+ * Render a project and all its conversations as a single Markdown document
+ * with a table of contents and abbreviated message excerpts.
+ *
+ * @param data - Project export payload
+ * @returns Markdown-formatted string
  */
 export function exportProjectToMarkdown(data: ProjectExportData): string {
   const lines: string[] = []
@@ -208,7 +222,11 @@ function formatDate(date: Date): string {
 }
 
 /**
- * Generate filename for export
+ * Generate a sanitized, date-stamped Markdown filename for an export.
+ *
+ * @param title - Source title to derive the slug from
+ * @param type - Export type (`"conversation"` or `"project"`)
+ * @returns A filename like `conversation-my-title-2024-01-01.md`
  */
 export function generateExportFilename(title: string, type: 'conversation' | 'project'): string {
   const sanitized = title

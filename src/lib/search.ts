@@ -7,6 +7,9 @@
 
 import { prisma } from './db'
 
+/**
+ * A single search result across any content type.
+ */
 export interface SearchResult {
   id: string
   type: 'conversation' | 'prompt' | 'code' | 'project'

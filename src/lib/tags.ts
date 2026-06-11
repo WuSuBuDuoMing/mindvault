@@ -6,6 +6,9 @@
 
 import { prisma } from './db'
 
+/**
+ * A tag enriched with its usage count across conversations.
+ */
 export interface TagWithCount {
   id: string
   name: string

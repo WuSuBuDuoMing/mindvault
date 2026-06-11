@@ -5,6 +5,10 @@
  * Claude exports can have different structures depending on the version.
  */
 
+/**
+ * Raw conversation object as found in Claude JSON export files.
+ * Fields vary by export version — all properties are optional.
+ */
 export interface RawClaudeConversation {
   uuid?: string
   id?: string
@@ -21,6 +25,9 @@ export interface RawClaudeConversation {
   }
 }
 
+/**
+ * Raw message object as found in Claude JSON export files.
+ */
 export interface RawClaudeMessage {
   uuid?: string
   id?: string
@@ -35,6 +42,9 @@ export interface RawClaudeMessage {
   index?: number
 }
 
+/**
+ * Conversation normalized into a consistent schema for database import.
+ */
 export interface NormalizedConversation {
   externalId: string
   title: string
@@ -43,6 +53,9 @@ export interface NormalizedConversation {
   messages: NormalizedMessage[]
 }
 
+/**
+ * Message normalized into a consistent schema for database import.
+ */
 export interface NormalizedMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
@@ -51,7 +64,11 @@ export interface NormalizedMessage {
 }
 
 /**
- * Normalize different Claude export formats into a consistent structure
+ * Normalize different Claude export formats (array, nested object, single conversation)
+ * into a consistent {@link NormalizedConversation} array.
+ *
+ * @param data - Raw parsed JSON from a Claude export file
+ * @returns Array of normalized conversations (invalid entries are filtered out)
  */
 export function normalizeClaudeExport(data: any): NormalizedConversation[] {
   // Try different possible structures
@@ -221,7 +238,10 @@ function generateId(): string {
 }
 
 /**
- * Validate JSON structure before parsing
+ * Validate that parsed JSON has at least one recognizable conversation structure.
+ *
+ * @param data - Raw parsed JSON to validate
+ * @returns `{ valid: true }` or `{ valid: false, error }` with a human-readable reason
  */
 export function validateClaudeExport(data: any): { valid: boolean; error?: string } {
   if (!data) {
@@ -242,7 +262,10 @@ export function validateClaudeExport(data: any): { valid: boolean; error?: strin
 }
 
 /**
- * Generate preview information from import data
+ * Generate a lightweight preview summary from import data without persisting anything.
+ *
+ * @param data - Raw parsed JSON from a Claude export file
+ * @returns Object with `conversationCount`, `totalMessages`, `dateRange`, and `sampleTitles`
  */
 export function generateImportPreview(data: any): {
   conversationCount: number

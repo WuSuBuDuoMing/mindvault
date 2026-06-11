@@ -4,11 +4,19 @@
  * Provides reusable pagination logic for API routes and components.
  */
 
+/**
+ * Accepted pagination query parameters.
+ */
 export interface PaginationParams {
   page?: number
   limit?: number
 }
 
+/**
+ * Paginated response envelope containing data and navigation metadata.
+ *
+ * @typeParam T - Element type of the data array
+ */
 export interface PaginationResult<T> {
   data: T[]
   pagination: {
@@ -21,6 +29,12 @@ export interface PaginationResult<T> {
   }
 }
 
+/**
+ * Normalizes raw pagination parameters, clamping values to safe ranges.
+ *
+ * @param params - Raw page and limit values from the request
+ * @returns Sanitized `{ page, limit, skip }` for Prisma queries
+ */
 export function getPaginationParams(params: PaginationParams) {
   const page = Math.max(1, params.page || 1)
   const limit = Math.min(100, Math.max(1, params.limit || 20))
@@ -29,6 +43,16 @@ export function getPaginationParams(params: PaginationParams) {
   return { page, limit, skip }
 }
 
+/**
+ * Builds a standard paginated result envelope.
+ *
+ * @typeParam T - Element type of the data array
+ * @param data - Page of results
+ * @param total - Total number of matching records
+ * @param page - Current page number (1-indexed)
+ * @param limit - Records per page
+ * @returns A {@link PaginationResult} with navigation flags
+ */
 export function createPaginationResult<T>(
   data: T[],
   total: number,
@@ -50,6 +74,12 @@ export function createPaginationResult<T>(
   }
 }
 
+/**
+ * Converts pagination metadata into HTTP response headers.
+ *
+ * @param pagination - Pagination metadata from a {@link PaginationResult}
+ * @returns Record of `X-*` pagination headers
+ */
 export function getPaginationHeaders(pagination: PaginationResult<any>['pagination']) {
   return {
     'X-Total-Count': pagination.total.toString(),

@@ -1,8 +1,8 @@
-# ClaudeNote
+# MindVault
 
 Local-first knowledge base for organizing Claude conversations.
 
-ClaudeNote transforms your Claude conversation history into a searchable, organized knowledge base. It automatically extracts prompts, code snippets, keywords, and categorizes conversations into projects — all processed locally on your machine.
+MindVault transforms your Claude conversation history into a searchable, organized knowledge base. It automatically extracts prompts, code snippets, keywords, and categorizes conversations into projects — all processed locally on your machine.
 
 ## Features
 
@@ -79,7 +79,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 1. Go to [claude.ai](https://claude.ai) → Settings → Export Data
 2. Download your conversation history
-3. In ClaudeNote, go to **Import** page
+3. In MindVault, go to **Import** page
 4. Upload the exported `conversations.json` file
 5. Review the preview and confirm import
 
@@ -214,6 +214,9 @@ npm run typecheck
 
 # Linting
 npm run lint
+
+# Run tests
+npm test
 
 # Build for production
 npm run build

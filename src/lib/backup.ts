@@ -6,6 +6,9 @@
 
 import { prisma } from './db'
 
+/**
+ * Serialized database backup containing all user data.
+ */
 export interface BackupData {
   version: string
   createdAt: string
@@ -16,7 +19,9 @@ export interface BackupData {
 }
 
 /**
- * Export all data as JSON
+ * Export all database records (conversations, projects, tags, import batches) as a JSON backup.
+ *
+ * @returns A {@link BackupData} object containing the full database snapshot
  */
 export async function exportBackup(): Promise<BackupData> {
   const [conversations, projects, tags, importBatches] = await Promise.all([
@@ -51,7 +56,12 @@ export async function exportBackup(): Promise<BackupData> {
 }
 
 /**
- * Import data from backup
+ * Restore database records from a {@link BackupData} object.
+ * Upserts projects, tags, and import batches; creates conversations only if
+ * they don't already exist (matched by `externalId` or `id`).
+ *
+ * @param data - The backup payload to import
+ * @returns Summary with counts of imported, skipped, and errored conversations
  */
 export async function importBackup(data: BackupData): Promise<{
   imported: number
@@ -200,7 +210,9 @@ export async function importBackup(data: BackupData): Promise<{
 }
 
 /**
- * Generate backup filename
+ * Generate a timestamped backup filename.
+ *
+ * @returns A filename in the format `claudenote-backup-YYYY-MM-DDTHH-MM-SS.json`
  */
 export function generateBackupFilename(): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
