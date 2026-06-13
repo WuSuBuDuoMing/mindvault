@@ -18,7 +18,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --ignore-scripts
+        run: npm install --force
 
       - name: TypeScript type check
         run: npx tsc --noEmit
