@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.0 — Local Optimization & Documentation (2026-06-14)
+
+### Changed
+- Local optimization and performance improvements
+- Documentation enhancement across project
+- Open-source infrastructure updates
+
 ## v0.2.0 — Quality Optimization
 
 ### Documentation
