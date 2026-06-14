@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.0 — Security & Documentation (2026-06-14)
+
+### Changed
+- Security policy, documentation enhancements, open-source best practices
+
 ## v0.3.0 — Local Optimization & Documentation (2026-06-14)
 
 ### Changed
