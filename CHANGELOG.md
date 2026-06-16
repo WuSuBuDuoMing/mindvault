@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.0 — Community Governance & Funding (2026-06-16)
+
+### Changed
+- Added CODE_OF_CONDUCT.md, FUNDING.yml, CODEOWNERS, enhanced Issue/PR templates
+
 ## v0.5.0 — Security & Documentation (2026-06-14)
 
 ### Changed
