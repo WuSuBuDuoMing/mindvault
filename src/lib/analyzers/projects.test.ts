@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { classifyConversation, generateProjectSummary } from './projects.ts'
+import { classifyConversation, generateProjectSummary, extractKeyProgress, extractTodos } from './projects.ts'
 
 describe('classifyConversation', () => {
   it('should classify code-related conversation', () => {
@@ -39,6 +39,33 @@ describe('classifyConversation', () => {
     const result = classifyConversation('Data analysis project', messages)
     assert.strictEqual(result.category, 'data')
   })
+
+  it('should classify research conversation', () => {
+    const messages = [
+      { role: 'user', content: 'Please analyze this research study and investigate the survey methodology findings from the literature review.' },
+      { role: 'assistant', content: 'Let me analyze the research methodology and evaluation findings.' },
+    ]
+    const result = classifyConversation('Research project', messages)
+    assert.strictEqual(result.category, 'research')
+  })
+
+  it('should classify business conversation', () => {
+    const messages = [
+      { role: 'user', content: 'Help me develop a business strategy for marketing our product to increase revenue and customer growth.' },
+      { role: 'assistant', content: 'Here is a business plan focusing on product market growth and sales strategy.' },
+    ]
+    const result = classifyConversation('Business planning', messages)
+    assert.strictEqual(result.category, 'business')
+  })
+
+  it('should classify design conversation', () => {
+    const messages = [
+      { role: 'user', content: 'I need help with UI design, creating wireframes and mockup prototypes for the interface layout.' },
+      { role: 'assistant', content: 'Here is a Figma prototype layout for your UI interface.' },
+    ]
+    const result = classifyConversation('UI Design', messages)
+    assert.strictEqual(result.category, 'design')
+  })
 })
 
 describe('generateProjectSummary', () => {
@@ -56,5 +83,70 @@ describe('generateProjectSummary', () => {
   it('should handle empty conversations', () => {
     const summary = generateProjectSummary([])
     assert.strictEqual(summary, 'No conversations in this project yet.')
+  })
+
+  it('should handle single conversation', () => {
+    const summary = generateProjectSummary([{ title: 'Only One' }])
+    assert.ok(summary.includes('1 conversation(s)'))
+    assert.ok(summary.includes('Only One'))
+  })
+})
+
+describe('extractKeyProgress', () => {
+  it('should extract progress from assistant messages', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: 'Step 1: We completed the database schema design.\nStep 2: Now let me build the API endpoints for the user service.',
+      },
+    ]
+    const progress = extractKeyProgress(messages)
+    assert.ok(progress.length > 0)
+  })
+
+  it('should not extract progress from user messages', () => {
+    const messages = [
+      {
+        role: 'user',
+        content: 'Please complete the implementation of the dashboard.',
+      },
+    ]
+    const progress = extractKeyProgress(messages)
+    assert.strictEqual(progress.length, 0)
+  })
+})
+
+describe('extractTodos', () => {
+  it('should extract TODO markers', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: 'Here is the plan:\n- TODO: implement the login feature\n- FIXME: fix the broken test',
+      },
+    ]
+    const todos = extractTodos(messages)
+    assert.ok(todos.length > 0)
+  })
+
+  it('should extract unchecked markdown tasks', () => {
+    const messages = [
+      {
+        role: 'user',
+        content: 'Checklist:\n- [ ] Write unit tests\n- [ ] Add error handling',
+      },
+    ]
+    const todos = extractTodos(messages)
+    assert.ok(todos.length > 0)
+  })
+
+  it('should extract action items', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: 'You need to complete the database migration before the next step.',
+      },
+    ]
+    const todos = extractTodos(messages)
+    assert.ok(todos.length > 0)
   })
 })

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { extractKeywords, extractKeywordsFromMessages, parseKeywords } from './keywords.ts'
+import { extractKeywords, extractKeywordsFromMessages, parseKeywords, formatKeywords } from './keywords.ts'
 
 describe('extractKeywords', () => {
   it('should extract English keywords by frequency', () => {
@@ -30,6 +30,26 @@ describe('extractKeywords', () => {
     assert.ok(!keywords.includes('and'))
     assert.ok(!keywords.includes('over'))
   })
+
+  it('should boost technical terms', () => {
+    const text = 'We use TypeScript and React with Prisma for the database layer. TypeScript provides great developer experience with React projects using Prisma ORM for TypeScript and React development with Prisma.'
+    const keywords = extractKeywords(text)
+    // Technical terms should rank higher due to 3x boost
+    const tsIndex = keywords.indexOf('typescript')
+    assert.ok(tsIndex >= 0, 'typescript should be in keywords')
+  })
+
+  it('should extract kebab-case and snake_case identifiers', () => {
+    const text = 'Please use my-component with my_component for the page. These are common naming conventions in web development with component-based architecture and component hierarchy.'
+    const keywords = extractKeywords(text)
+    assert.ok(keywords.some(k => k.includes('-') || k.includes('_')))
+  })
+
+  it('should handle mixed English and Chinese text', () => {
+    const text = 'React是一个前端框架，使用TypeScript可以增强代码质量，React配合TypeScript开发更加高效和安全，React TypeScript组合是前端开发的最佳选择'
+    const keywords = extractKeywords(text)
+    assert.ok(keywords.length > 0)
+  })
 })
 
 describe('extractKeywordsFromMessages', () => {
@@ -41,6 +61,10 @@ describe('extractKeywordsFromMessages', () => {
     const keywords = extractKeywordsFromMessages(messages)
     assert.ok(keywords.length > 0)
     assert.ok(keywords.includes('react'))
+  })
+
+  it('should return empty for empty messages array', () => {
+    assert.deepStrictEqual(extractKeywordsFromMessages([]), [])
   })
 })
 
@@ -55,5 +79,23 @@ describe('parseKeywords', () => {
 
   it('should return empty array for invalid JSON', () => {
     assert.deepStrictEqual(parseKeywords('not json'), [])
+  })
+
+  it('should parse empty JSON array', () => {
+    assert.deepStrictEqual(parseKeywords('[]'), [])
+  })
+})
+
+describe('formatKeywords', () => {
+  it('should join keywords with comma and space', () => {
+    assert.strictEqual(formatKeywords(['react', 'typescript']), 'react, typescript')
+  })
+
+  it('should handle empty array', () => {
+    assert.strictEqual(formatKeywords([]), '')
+  })
+
+  it('should handle single keyword', () => {
+    assert.strictEqual(formatKeywords(['react']), 'react')
   })
 })

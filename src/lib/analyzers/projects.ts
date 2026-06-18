@@ -5,9 +5,15 @@
  * Uses keyword matching for MVP, can be extended with AI.
  */
 
+/**
+ * A predefined project category used for conversation classification.
+ */
 export interface ProjectCategory {
+  /** Display name of the category (e.g. "Code Projects"). */
   name: string
+  /** Machine-readable category key (e.g. "code", "research"). */
   category: string
+  /** Human-readable description of the category scope. */
   description: string
 }
 
@@ -112,7 +118,12 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
 }
 
 /**
- * Classify a conversation into a project category
+ * Classify a conversation into a project category using keyword-based scoring.
+ * Matches conversation title and content against predefined category keywords.
+ *
+ * @param title - Conversation title
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns The best-matching {@link ProjectCategory}, or "Uncategorized" if no strong match
  */
 export function classifyConversation(
   title: string,
@@ -169,7 +180,10 @@ export function classifyConversation(
 }
 
 /**
- * Generate project summary from conversations
+ * Generate a human-readable project summary from a list of conversations.
+ *
+ * @param conversations - Array of conversations with `title` and optional `summary`
+ * @returns A summary string describing the project's contents
  */
 export function generateProjectSummary(conversations: { title: string; summary?: string }[]): string {
   if (conversations.length === 0) {
@@ -183,7 +197,11 @@ export function generateProjectSummary(conversations: { title: string; summary?:
 }
 
 /**
- * Extract key progress points from conversations
+ * Extract key progress points from assistant messages using pattern matching.
+ * Looks for completion indicators, step markers, and planning phrases.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns Up to 10 progress point strings
  */
 export function extractKeyProgress(messages: { role: string; content: string }[]): string[] {
   const progressPoints: string[] = []
@@ -216,7 +234,11 @@ export function extractKeyProgress(messages: { role: string; content: string }[]
 }
 
 /**
- * Extract action items / todos from conversations
+ * Extract TODO/FIXME/action items from conversation messages.
+ * Searches for explicit markers and unchecked markdown tasks.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns Up to 10 extracted action item strings
  */
 export function extractTodos(messages: { role: string; content: string }[]): string[] {
   const todos: string[] = []

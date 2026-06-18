@@ -16,7 +16,9 @@ export interface TagWithCount {
 }
 
 /**
- * Get all tags with usage count
+ * Get all tags with their usage count across conversations.
+ *
+ * @returns Array of tags sorted alphabetically, each with a `count` field
  */
 export async function getAllTags(): Promise<TagWithCount[]> {
   const tags = await prisma.tag.findMany({
@@ -37,7 +39,11 @@ export async function getAllTags(): Promise<TagWithCount[]> {
 }
 
 /**
- * Add tag to conversation
+ * Add a tag to a conversation. Creates the tag if it doesn't exist.
+ * Tag names are normalized to lowercase and trimmed.
+ *
+ * @param conversationId - The conversation ID to tag
+ * @param tagName - The tag name to add
  */
 export async function addTagToConversation(conversationId: string, tagName: string): Promise<void> {
   const normalizedTag = tagName.trim().toLowerCase()
@@ -74,7 +80,10 @@ export async function addTagToConversation(conversationId: string, tagName: stri
 }
 
 /**
- * Remove tag from conversation
+ * Remove a specific tag from a conversation.
+ *
+ * @param conversationId - The conversation ID
+ * @param tagId - The tag ID to remove
  */
 export async function removeTagFromConversation(conversationId: string, tagId: string): Promise<void> {
   await prisma.conversationTag.delete({
@@ -88,7 +97,10 @@ export async function removeTagFromConversation(conversationId: string, tagId: s
 }
 
 /**
- * Get tags for a conversation
+ * Get all tags assigned to a specific conversation.
+ *
+ * @param conversationId - The conversation ID to query
+ * @returns Array of Tag objects associated with the conversation
  */
 export async function getConversationTags(conversationId: string) {
   const conversationTags = await prisma.conversationTag.findMany({
@@ -100,7 +112,11 @@ export async function getConversationTags(conversationId: string) {
 }
 
 /**
- * Update conversation tags
+ * Replace all tags on a conversation with a new set of tag names.
+ * Removes existing tags first, then adds the new ones.
+ *
+ * @param conversationId - The conversation ID
+ * @param tagNames - Array of tag names to assign
  */
 export async function updateConversationTags(conversationId: string, tagNames: string[]): Promise<void> {
   // Remove all existing tags

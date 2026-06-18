@@ -57,7 +57,10 @@ const PROJECT_PATTERNS = [
 ]
 
 /**
- * Extract keywords from conversation messages
+ * Extract keywords from an array of conversation messages.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns Top 15 keywords sorted by weighted frequency
  */
 export function extractKeywordsFromMessages(messages: { role: string; content: string }[]): string[] {
   const allText = messages
@@ -68,7 +71,11 @@ export function extractKeywordsFromMessages(messages: { role: string; content: s
 }
 
 /**
- * Extract keywords from a text string
+ * Extract keywords from a text string using frequency analysis with stop word
+ * filtering and technical term boosting. Supports English and Chinese keywords.
+ *
+ * @param text - The input text to extract keywords from
+ * @returns Top 15 keywords sorted by weighted frequency (returns empty if text < 20 chars)
  */
 export function extractKeywords(text: string): string[] {
   if (!text || text.length < 20) return []

@@ -9,14 +9,24 @@
  * - Explicit prompt markers
  */
 
+/**
+ * A prompt extracted from conversation content, with auto-generated title and topic tags.
+ */
 export interface ExtractedPrompt {
+  /** Auto-generated title based on the prompt content. */
   title: string
+  /** The full prompt content text. */
   content: string
+  /** Topic and action tags assigned by pattern matching. */
   tags: string[]
 }
 
 /**
- * Extract prompts from user messages in a conversation
+ * Extract reusable prompts from user messages in a conversation.
+ * Uses structural analysis, role/task patterns, and length heuristics.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns Deduplicated array of extracted prompts
  */
 export function extractPrompts(messages: { role: string; content: string }[]): ExtractedPrompt[] {
   const prompts: ExtractedPrompt[] = []

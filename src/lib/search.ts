@@ -20,7 +20,11 @@ export interface SearchResult {
 }
 
 /**
- * Search across all content types
+ * Search across all content types (conversations, prompts, code snippets, projects).
+ * Requires a query of at least 2 characters. Results are sorted by relevance score.
+ *
+ * @param query - Search string (minimum 2 characters)
+ * @returns Array of {@link SearchResult} sorted by relevance descending
  */
 export async function searchAll(query: string): Promise<SearchResult[]> {
   if (!query || query.trim().length < 2) {
@@ -160,7 +164,10 @@ export async function searchAll(query: string): Promise<SearchResult[]> {
 }
 
 /**
- * Search only conversations
+ * Search only conversations by title and summary. Requires at least 2 characters.
+ *
+ * @param query - Search string
+ * @returns Up to 50 matching conversations ordered by most recently updated
  */
 export async function searchConversations(query: string) {
   if (!query || query.trim().length < 2) {
@@ -180,7 +187,11 @@ export async function searchConversations(query: string) {
 }
 
 /**
- * Extract highlight snippet around the match
+ * Extract a text snippet around the query match for display in search results.
+ *
+ * @param content - The full content to search within
+ * @param query - The search query to locate
+ * @returns A substring of up to 100 chars centered on the match, with ellipsis
  */
 function extractHighlight(content: string, query: string): string {
   if (!content) return ''
@@ -205,7 +216,13 @@ function extractHighlight(content: string, query: string): string {
 }
 
 /**
- * Calculate relevance score for search results
+ * Calculate a relevance score for a search result based on title and content match quality.
+ * Title matches score higher (up to 100 points) than content matches (up to 60 points).
+ *
+ * @param title - The title to score against
+ * @param content - The content body to score against
+ * @param query - The search query
+ * @returns Numeric relevance score (higher is more relevant)
  */
 function calculateRelevance(title: string | null, content: string | null, query: string): number {
   let score = 0

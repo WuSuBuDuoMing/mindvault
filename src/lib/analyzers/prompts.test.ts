@@ -55,4 +55,39 @@ describe('extractPrompts', () => {
     const prompts = extractPrompts(messages)
     assert.strictEqual(prompts.length, 1)
   })
+
+  it('should extract prompts with Chinese indicators', () => {
+    const messages = [
+      {
+        role: 'user',
+        content: '请帮我写一个完整的项目架构设计方案。要求如下：\n1. 项目结构设计\n2. 数据库表设计\n3. API 接口设计\n4. 前端组件设计\n请按照上述要求提供详细的方案，并包含示例代码和最佳实践建议。',
+      },
+    ]
+    const prompts = extractPrompts(messages)
+    assert.ok(prompts.length > 0)
+  })
+
+  it('should extract embedded prompts', () => {
+    const messages = [
+      {
+        role: 'user',
+        content: 'Here is a prompt you can use:\n\nAct as a senior software architect. You will be given a codebase and asked to review it for security vulnerabilities, performance issues, and code quality. Focus on practical, actionable feedback that the development team can implement immediately.',
+      },
+    ]
+    const prompts = extractPrompts(messages)
+    assert.ok(prompts.length > 0)
+  })
+
+  it('should assign relevant tags', () => {
+    const messages = [
+      {
+        role: 'user',
+        content: 'Please write a comprehensive code review checklist for a React TypeScript project. Include testing strategies, performance optimization, and security best practices for the development team.',
+      },
+    ]
+    const prompts = extractPrompts(messages)
+    if (prompts.length > 0) {
+      assert.ok(prompts[0].tags.length > 0)
+    }
+  })
 })

@@ -5,14 +5,25 @@
  * Supports markdown code blocks with language tags and auto-detection.
  */
 
+/**
+ * A code block extracted from conversation content with language metadata.
+ */
 export interface ExtractedCode {
+  /** Detected or normalized programming language (e.g. "typescript", "python"). */
   language: string | null
+  /** The raw code content. */
   code: string
+  /** Surrounding text that describes what the code does. */
   description: string | null
 }
 
 /**
- * Extract code blocks from messages
+ * Extract code blocks from conversation messages.
+ * Supports fenced markdown code blocks with language tags.
+ * Deduplicates blocks and skips those shorter than 15 characters.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns Deduplicated array of extracted code blocks with language detection
  */
 export function extractCodeBlocks(messages: { role: string; content: string }[]): ExtractedCode[] {
   const codeBlocks: ExtractedCode[] = []
@@ -222,7 +233,10 @@ function detectLanguage(code: string): string | null {
 }
 
 /**
- * Get language color for UI display
+ * Get the display color hex code for a programming language.
+ *
+ * @param language - Programming language name (e.g. "typescript", "python")
+ * @returns Hex color string for UI display (defaults to gray if unknown)
  */
 export function getLanguageColor(language: string | null): string {
   const colors: Record<string, string> = {

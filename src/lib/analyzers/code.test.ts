@@ -66,4 +66,18 @@ describe('getLanguageColor', () => {
     assert.strictEqual(getLanguageColor('unknown'), '#6b7280')
     assert.strictEqual(getLanguageColor(null), '#6b7280')
   })
+
+  it('should return correct colors for more languages', () => {
+    assert.strictEqual(getLanguageColor('rust'), '#dea584')
+    assert.strictEqual(getLanguageColor('go'), '#00add8')
+    assert.strictEqual(getLanguageColor('html'), '#e34c26')
+    assert.strictEqual(getLanguageColor('css'), '#563d7c')
+    assert.strictEqual(getLanguageColor('sql'), '#e38c00')
+    assert.strictEqual(getLanguageColor('bash'), '#4eaa25')
+    assert.strictEqual(getLanguageColor('docker'), '#2496ed')
+  })
+
+  it('should return default color for empty string', () => {
+    assert.strictEqual(getLanguageColor(''), '#6b7280')
+  })
 })

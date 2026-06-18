@@ -6,13 +6,21 @@
  * structured summary suitable for the knowledge base.
  */
 
+/**
+ * Result of analyzing a conversation's summary and keywords.
+ */
 export interface SummaryResult {
+  /** A concise text summary of the conversation topic and type. */
   summary: string
+  /** Top keywords extracted from conversation content. */
   keywords: string[]
 }
 
 /**
- * Generate a summary from conversation messages
+ * Generate a summary and extract keywords from conversation messages.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns A {@link SummaryResult} containing the summary text and keyword list
  */
 export function generateSummary(messages: { role: string; content: string }[]): SummaryResult {
   if (messages.length === 0) {
@@ -168,7 +176,10 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
 }
 
 /**
- * Extract keywords from conversation content
+ * Extract top keywords from an array of message content strings.
+ *
+ * @param messages - Concatenated message content strings
+ * @returns Top 10 keywords sorted by frequency, with technical terms boosted
  */
 export function extractKeywords(messages: string[]): string[] {
   const allText = messages.join(' ').toLowerCase()
