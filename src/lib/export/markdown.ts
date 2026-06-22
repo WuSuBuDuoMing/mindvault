@@ -1,11 +1,12 @@
 /**
- * Markdown Export
+ * Multi-Format Export
  *
- * Export conversations and projects to Markdown format.
+ * Export conversations, projects, prompts, and code snippets in
+ * Markdown, JSON, and plain-text (PDF-ready HTML) formats.
  */
 
 /**
- * Shape of a single conversation ready for Markdown export.
+ * Shape of a single conversation ready for export.
  */
 export interface ConversationExportData {
   title: string
@@ -30,7 +31,7 @@ export interface ConversationExportData {
 }
 
 /**
- * Shape of a project with its conversations for Markdown export.
+ * Shape of a project with its conversations for export.
  */
 export interface ProjectExportData {
   name: string
@@ -40,11 +41,33 @@ export interface ProjectExportData {
 }
 
 /**
+ * Shape of a prompt item for export.
+ */
+export interface PromptExportData {
+  title?: string | null
+  content: string
+  tags?: string | null
+  isFavorite?: boolean
+  createdAt?: Date
+  conversationTitle?: string
+}
+
+/**
+ * Shape of a code snippet for export.
+ */
+export interface CodeSnippetExportData {
+  language?: string | null
+  code: string
+  description?: string | null
+  createdAt?: Date
+  conversationTitle?: string
+}
+
+// ─── Markdown Export ─────────────────────────────────────────────────────────
+
+/**
  * Render a single conversation as a Markdown document with metadata,
  * message transcript, extracted prompts, and code snippets.
- *
- * @param data - Conversation export payload
- * @returns Markdown-formatted string
  */
 export function exportConversationToMarkdown(data: ConversationExportData): string {
   const lines: string[] = []
@@ -119,9 +142,6 @@ export function exportConversationToMarkdown(data: ConversationExportData): stri
 /**
  * Render a project and all its conversations as a single Markdown document
  * with a table of contents and abbreviated message excerpts.
- *
- * @param data - Project export payload
- * @returns Markdown-formatted string
  */
 export function exportProjectToMarkdown(data: ProjectExportData): string {
   const lines: string[] = []
@@ -168,7 +188,7 @@ export function exportProjectToMarkdown(data: ProjectExportData): string {
     lines.push('### Messages')
     lines.push('')
 
-    const maxMessages = 20 // Limit messages in project export
+    const maxMessages = 20
     const messagesToShow = conv.messages.slice(0, maxMessages)
 
     for (const message of messagesToShow) {
@@ -196,16 +216,240 @@ export function exportProjectToMarkdown(data: ProjectExportData): string {
   return lines.join('\n')
 }
 
+// ─── JSON Export ─────────────────────────────────────────────────────────────
+
+/**
+ * Export a single conversation as a structured JSON string.
+ */
+export function exportConversationToJSON(data: ConversationExportData): string {
+  return JSON.stringify({
+    format: 'mindvault-conversation',
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    conversation: {
+      title: data.title,
+      summary: data.summary || null,
+      keywords: data.keywords || [],
+      createdAt: data.createdAt.toISOString(),
+      messageCount: data.messages.length,
+      messages: data.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt?.toISOString() || null,
+      })),
+      prompts: (data.prompts || []).map((p) => ({
+        title: p.title || null,
+        content: p.content,
+        tags: p.tags || null,
+      })),
+      codeSnippets: (data.codeSnippets || []).map((s) => ({
+        language: s.language || null,
+        code: s.code,
+        description: s.description || null,
+      })),
+    },
+  }, null, 2)
+}
+
+/**
+ * Export a project and all its conversations as a structured JSON string.
+ */
+export function exportProjectToJSON(data: ProjectExportData): string {
+  return JSON.stringify({
+    format: 'mindvault-project',
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    project: {
+      name: data.name,
+      summary: data.summary || null,
+      category: data.category,
+      conversationCount: data.conversations.length,
+      conversations: data.conversations.map((conv) => ({
+        title: conv.title,
+        summary: conv.summary || null,
+        createdAt: conv.createdAt.toISOString(),
+        messageCount: conv.messages.length,
+        messages: conv.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          createdAt: m.createdAt?.toISOString() || null,
+        })),
+      })),
+    },
+  }, null, 2)
+}
+
+/**
+ * Export prompts as a structured JSON string.
+ */
+export function exportPromptsToJSON(prompts: PromptExportData[]): string {
+  return JSON.stringify({
+    format: 'mindvault-prompts',
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    totalCount: prompts.length,
+    prompts: prompts.map((p) => ({
+      title: p.title || null,
+      content: p.content,
+      tags: p.tags || null,
+      isFavorite: p.isFavorite || false,
+      createdAt: p.createdAt?.toISOString() || null,
+      conversationTitle: p.conversationTitle || null,
+    })),
+  }, null, 2)
+}
+
+/**
+ * Export code snippets as a structured JSON string.
+ */
+export function exportCodeSnippetsToJSON(snippets: CodeSnippetExportData[]): string {
+  return JSON.stringify({
+    format: 'mindvault-code-snippets',
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    totalCount: snippets.length,
+    snippets: snippets.map((s) => ({
+      language: s.language || null,
+      code: s.code,
+      description: s.description || null,
+      lineCount: s.code.split('\n').length,
+      createdAt: s.createdAt?.toISOString() || null,
+      conversationTitle: s.conversationTitle || null,
+    })),
+  }, null, 2)
+}
+
+// ─── HTML (PDF-ready) Export ─────────────────────────────────────────────────
+
+/**
+ * Export a conversation as a self-contained HTML document suitable for PDF generation
+ * via browser print or headless tools.
+ */
+export function exportConversationToHTML(data: ConversationExportData): string {
+  const esc = escapeHTML
+  const parts: string[] = []
+
+  parts.push('<!DOCTYPE html>')
+  parts.push('<html lang="en"><head>')
+  parts.push('<meta charset="UTF-8">')
+  parts.push(`<title>${esc(data.title)}</title>`)
+  parts.push('<style>')
+  parts.push(HTML_STYLES)
+  parts.push('</style></head><body>')
+  parts.push(`<h1>${esc(data.title)}</h1>`)
+
+  // Metadata
+  parts.push('<div class="metadata">')
+  parts.push(`<p><strong>Created:</strong> ${formatDate(data.createdAt)}</p>`)
+  if (data.summary) parts.push(`<p><strong>Summary:</strong> ${esc(data.summary)}</p>`)
+  if (data.keywords?.length) parts.push(`<p><strong>Keywords:</strong> ${esc(data.keywords.join(', '))}</p>`)
+  parts.push('</div>')
+
+  // Messages
+  parts.push('<h2>Conversation</h2>')
+  for (const msg of data.messages) {
+    parts.push(`<div class="message ${msg.role}">`)
+    parts.push(`<div class="role">${esc(getRoleLabel(msg.role))}</div>`)
+    parts.push(`<div class="content">${esc(msg.content)}</div>`)
+    parts.push('</div>')
+  }
+
+  // Prompts
+  if (data.prompts?.length) {
+    parts.push('<h2>Extracted Prompts</h2>')
+    for (const p of data.prompts) {
+      if (p.title) parts.push(`<h3>${esc(p.title)}</h3>`)
+      parts.push(`<pre>${esc(p.content)}</pre>`)
+      if (p.tags) parts.push(`<p><em>Tags:</em> ${esc(p.tags)}</p>`)
+    }
+  }
+
+  // Code
+  if (data.codeSnippets?.length) {
+    parts.push('<h2>Code Snippets</h2>')
+    for (const s of data.codeSnippets) {
+      if (s.description) parts.push(`<h3>${esc(s.description)}</h3>`)
+      parts.push(`<pre><code>${esc(s.code)}</code></pre>`)
+    }
+  }
+
+  parts.push('</body></html>')
+  return parts.join('\n')
+}
+
+/**
+ * Export prompts as a self-contained HTML document.
+ */
+export function exportPromptsToHTML(prompts: PromptExportData[]): string {
+  const esc = escapeHTML
+  const parts: string[] = []
+
+  parts.push('<!DOCTYPE html>')
+  parts.push('<html lang="en"><head>')
+  parts.push('<meta charset="UTF-8">')
+  parts.push('<title>Prompt Library</title>')
+  parts.push('<style>')
+  parts.push(HTML_STYLES)
+  parts.push('</style></head><body>')
+  parts.push('<h1>Prompt Library</h1>')
+  parts.push(`<p>Exported on ${new Date().toLocaleDateString()} | Total: ${prompts.length} prompts</p>`)
+
+  for (const p of prompts) {
+    parts.push('<div class="card">')
+    parts.push(`<h2>${esc(p.title || 'Untitled Prompt')}</h2>`)
+    if (p.conversationTitle) parts.push(`<p><em>From: ${esc(p.conversationTitle)}</em></p>`)
+    if (p.tags) parts.push(`<p><strong>Tags:</strong> ${esc(p.tags)}</p>`)
+    if (p.isFavorite) parts.push('<p><strong>Favorite:</strong> Yes</p>')
+    parts.push(`<pre>${esc(p.content)}</pre>`)
+    parts.push('</div>')
+  }
+
+  parts.push('</body></html>')
+  return parts.join('\n')
+}
+
+/**
+ * Export code snippets as a self-contained HTML document.
+ */
+export function exportCodeSnippetsToHTML(snippets: CodeSnippetExportData[]): string {
+  const esc = escapeHTML
+  const parts: string[] = []
+
+  parts.push('<!DOCTYPE html>')
+  parts.push('<html lang="en"><head>')
+  parts.push('<meta charset="UTF-8">')
+  parts.push('<title>Code Snippets</title>')
+  parts.push('<style>')
+  parts.push(HTML_STYLES)
+  parts.push('</style></head><body>')
+  parts.push('<h1>Code Snippets Library</h1>')
+  parts.push(`<p>Exported on ${new Date().toLocaleDateString()} | Total: ${snippets.length} snippets</p>`)
+
+  for (const s of snippets) {
+    parts.push('<div class="card">')
+    parts.push(`<h2>${esc(s.description || `${s.language || 'Code'} Snippet`)}</h2>`)
+    parts.push(`<p><strong>Language:</strong> ${esc(s.language || 'Unknown')}</p>`)
+    if (s.conversationTitle) parts.push(`<p><em>From: ${esc(s.conversationTitle)}</em></p>`)
+    parts.push(`<pre><code>${esc(s.code)}</code></pre>`)
+    parts.push('</div>')
+  }
+
+  parts.push('</body></html>')
+  return parts.join('\n')
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function getRoleLabel(role: string): string {
   switch (role.toLowerCase()) {
     case 'user':
     case 'human':
-      return '👤 User'
+      return 'User'
     case 'assistant':
     case 'claude':
-      return '🤖 Assistant'
+      return 'Assistant'
     case 'system':
-      return '⚙️ System'
+      return 'System'
     default:
       return role
   }
@@ -221,14 +465,28 @@ function formatDate(date: Date): string {
   })
 }
 
+function escapeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 /**
- * Generate a sanitized, date-stamped Markdown filename for an export.
+ * Generate a sanitized, date-stamped filename for an export.
  *
  * @param title - Source title to derive the slug from
  * @param type - Export type (`"conversation"` or `"project"`)
+ * @param ext - File extension (`"md"`, `"json"`, `"html"`)
  * @returns A filename like `conversation-my-title-2024-01-01.md`
  */
-export function generateExportFilename(title: string, type: 'conversation' | 'project'): string {
+export function generateExportFilename(
+  title: string,
+  type: 'conversation' | 'project' | 'prompts' | 'code-snippets',
+  ext: 'md' | 'json' | 'html' = 'md'
+): string {
   const sanitized = title
     .replace(/[^a-zA-Z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
@@ -237,5 +495,23 @@ export function generateExportFilename(title: string, type: 'conversation' | 'pr
 
   const timestamp = new Date().toISOString().split('T')[0]
 
-  return `${type}-${sanitized}-${timestamp}.md`
+  return `${type}-${sanitized}-${timestamp}.${ext}`
 }
+
+const HTML_STYLES = `
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; color: #1a1a1a; line-height: 1.6; }
+  h1 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+  h2 { color: #374151; margin-top: 2rem; }
+  h3 { color: #6b7280; }
+  .metadata { background: #f9fafb; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+  .message { margin: 1rem 0; padding: 1rem; border-radius: 8px; }
+  .message.user { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .message.assistant { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .message.system { background: #fefce8; border-left: 4px solid #eab308; }
+  .role { font-weight: bold; margin-bottom: 0.5rem; }
+  .content { white-space: pre-wrap; }
+  .card { background: #f9fafb; padding: 1.5rem; border-radius: 8px; margin: 1rem 0; border: 1px solid #e5e7eb; }
+  pre { background: #1f2937; color: #f3f4f6; padding: 1rem; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+  code { font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace; font-size: 0.9rem; }
+  @media print { body { max-width: none; padding: 0; } }
+`
