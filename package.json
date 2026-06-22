@@ -15,7 +15,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@next/swc-win32-x64-msvc": "^16.2.9",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.0",
