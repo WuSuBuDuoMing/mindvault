@@ -91,7 +91,7 @@ function isPromptLike(content: string): boolean {
     /(?:write|create|generate|build) (?:a |an )?(?:prompt|template|script)/i,
     /(?:system|user) prompt/i,
     /prompt(?:\s*[:：])/i,
-    /(?:请|帮我|我需要) (?:写|创建|生成|设计)/,
+    /(?:请|帮我|我需要)\s*(?:写|创建|生成|设计)/,
     /你现在是/,
     /你的(?:角色|任务|目标)(?:是|为)/,
   ]
