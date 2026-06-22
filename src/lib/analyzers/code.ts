@@ -227,14 +227,35 @@ function detectLanguage(code: string): string | null {
     return 'tsx'
   }
 
+  // Python patterns — check before JS since `import` keyword overlaps
+  if (/\b(def |class |import |from |if __name__|print\(|range\(|lambda |elif )\b/.test(code)) {
+    return 'python'
+  }
+
+  // Rust patterns — check before JS since `let mut` matches JS `let`
+  if (/\b(fn |let mut|impl |pub |struct |enum |trait |match |unwrap\(\)|->)\b/.test(code)) {
+    return 'rust'
+  }
+
+  // Go patterns — check before JS since `func`/`import` overlap
+  if (/\b(func |package |import |fmt\.|:=|goroutine|chan )\b/.test(code)) {
+    return 'go'
+  }
+
+  // Kotlin patterns — check before JS since `val`/`var` overlap
+  if (/\b(fun |val |var |when\b|suspend |data class|companion object)\b/.test(code)) {
+    return 'kotlin'
+  }
+
+  // Swift patterns — check before JS since `let`/`var`/`func`/`import` overlap
+  if (/\b(var |let |func |guard |if let|struct |class |protocol |import UIKit)\b/.test(code) &&
+      !/\b(const|=>|require|module\.exports)\b/.test(code)) {
+    return 'swift'
+  }
+
   // JavaScript/TypeScript patterns
   if (/\b(const|let|var|function|=>|import|export|require|module\.exports)\b/.test(code)) {
     return 'javascript'
-  }
-
-  // Python patterns
-  if (/\b(def |class |import |from |if __name__|print\(|range\(|lambda |elif )\b/.test(code)) {
-    return 'python'
   }
 
   // Java patterns
@@ -254,16 +275,6 @@ function detectLanguage(code: string): string | null {
     return 'csharp'
   }
 
-  // Rust patterns
-  if (/\b(fn |let mut|impl |pub |struct |enum |trait |match |unwrap\(\)|->)\b/.test(code)) {
-    return 'rust'
-  }
-
-  // Go patterns
-  if (/\b(func |package |import |fmt\.|:=|goroutine|chan )\b/.test(code)) {
-    return 'go'
-  }
-
   // PHP patterns
   if (/\b(\$\w+\s*=|echo |function\s+\w+\s*\(|<\?php|\->|::class)\b/.test(code)) {
     return 'php'
@@ -272,16 +283,6 @@ function detectLanguage(code: string): string | null {
   // Ruby patterns
   if (/\b(def |end\b|do\b|puts |require |attr_|\.each\b|\.map\b)\b/.test(code) && /\bend\b/.test(code)) {
     return 'ruby'
-  }
-
-  // Swift patterns
-  if (/\b(var |let |func |guard |if let|struct |class |protocol |import UIKit)\b/.test(code)) {
-    return 'swift'
-  }
-
-  // Kotlin patterns
-  if (/\b(fun |val |var |when\b|suspend |data class|companion object)\b/.test(code)) {
-    return 'kotlin'
   }
 
   // HTML patterns

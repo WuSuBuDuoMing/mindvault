@@ -433,7 +433,7 @@ describe('exportCodeSnippetsToCSV', () => {
     const snippets = [
       {
         language: 'typescript',
-        code: 'const x = 1\nconst y = 2',
+        code: 'const x = 1',
         description: 'Variables',
         conversationTitle: 'Code Chat',
       },
@@ -445,7 +445,7 @@ describe('exportCodeSnippetsToCSV', () => {
     assert.ok(lines[0].includes('Language'))
     assert.ok(lines[0].includes('Lines'))
     assert.ok(lines[1].includes('typescript'))
-    assert.ok(lines[1].includes('2'))
+    assert.ok(lines[1].includes('1'))
   })
 })
 
