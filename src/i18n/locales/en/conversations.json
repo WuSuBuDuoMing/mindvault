@@ -1,0 +1,21 @@
+{
+  "title": "Conversations",
+  "subtitle-browse": "Browse and search your Claude conversations",
+  "selected-count": "{{count}} selected",
+  "delete-selected": "Delete ({{count}})",
+  "search-placeholder": "Search conversations...",
+  "newest": "Newest",
+  "oldest": "Oldest",
+  "most-messages": "Most Messages",
+  "favorites": "Favorites",
+  "no-matching": "No matching conversations",
+  "no-conversations": "No conversations yet",
+  "try-adjusting": "Try adjusting your search query",
+  "import-first": "Import your Claude conversation history to see them here.",
+  "import-conversations": "Import Conversations",
+  "deselect-all": "Deselect All",
+  "select-all": "Select All",
+  "n-conversations": "{{count}} conversations",
+  "msgs": "msgs",
+  "delete-confirm": "Delete {{count}} conversation(s)? This cannot be undone."
+}

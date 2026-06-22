@@ -1,0 +1,21 @@
+{
+  "title": "提示词",
+  "subtitle": "提取的提示词库 — 来自对话的可复用提示词",
+  "export-all": "导出全部",
+  "search-placeholder": "搜索提示词...",
+  "favorites": "收藏",
+  "all": "全部",
+  "n-prompts": "{{count}} 条提示词",
+  "showing-favorites": "仅显示收藏",
+  "tagged": "标签: {{tag}}",
+  "no-matching": "没有匹配的提示词",
+  "no-prompts": "尚无提示词",
+  "try-adjusting": "尝试调整搜索或筛选条件",
+  "auto-extracted": "提示词在导入数据时会从对话中自动提取。",
+  "untitled-prompt": "未命名提示词",
+  "show-more": "展开更多",
+  "show-less": "收起",
+  "add-favorites": "添加到收藏",
+  "remove-favorites": "从收藏中移除",
+  "copy-prompt": "复制提示词"
+}

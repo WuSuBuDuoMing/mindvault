@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Home, RefreshCw, AlertTriangle } from 'lucide-react'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 export default function ErrorPage({
   error,
@@ -13,6 +14,8 @@ export default function ErrorPage({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const { t, locale } = useTranslation()
+
   useEffect(() => {
     console.error('Application error:', error)
   }, [error])
@@ -24,11 +27,11 @@ export default function ErrorPage({
           <div className="mx-auto mb-4">
             <AlertTriangle className="h-12 w-12 text-destructive" />
           </div>
-          <CardTitle className="text-xl">Something Went Wrong</CardTitle>
+          <CardTitle className="text-xl">{t('error.something-wrong')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground text-center">
-            An unexpected error occurred. This has been logged and you can try again.
+            {t('error.description')}
           </p>
           {error.message && (
             <div className="p-3 bg-muted rounded-lg">
@@ -40,12 +43,12 @@ export default function ErrorPage({
           <div className="flex gap-3 justify-center">
             <Button onClick={reset} variant="default">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
+              {t('error.try-again')}
             </Button>
             <Link href="/">
               <Button variant="outline">
                 <Home className="h-4 w-4 mr-2" />
-                Dashboard
+                {t('error.dashboard')}
               </Button>
             </Link>
           </div>

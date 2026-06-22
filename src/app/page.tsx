@@ -1,5 +1,8 @@
+'use client'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   MessageSquare,
   FolderOpen,
@@ -11,145 +14,47 @@ import {
   HardDrive,
 } from 'lucide-react'
 import Link from 'next/link'
-import { prisma } from '@/lib/db'
+import { useEffect, useState } from 'react'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
+import { translateCategory } from '@/i18n'
 
-async function getStats() {
-  const [
-    conversationCount,
-    messageCount,
-    projectCount,
-    promptCount,
-    codeSnippetCount,
-    latestImport,
-    latestBatch,
-  ] = await Promise.all([
-    prisma.conversation.count(),
-    prisma.message.count(),
-    prisma.project.count(),
-    prisma.promptItem.count(),
-    prisma.codeSnippet.count(),
-    prisma.conversation.findFirst({
-      orderBy: { importedAt: 'desc' },
-      select: { importedAt: true },
-    }),
-    prisma.importBatch.findFirst({
-      orderBy: { createdAt: 'desc' },
-    }),
-  ])
-
-  return {
-    conversationCount,
-    messageCount,
-    projectCount,
-    promptCount,
-    codeSnippetCount,
-    latestImport: latestImport?.importedAt || null,
-    latestBatch,
+interface DashboardData {
+  stats: {
+    conversationCount: number
+    messageCount: number
+    projectCount: number
+    promptCount: number
+    codeSnippetCount: number
+    latestImport: string | null
+    latestBatch: {
+      conversationCount: number
+      messageCount: number
+      status: string
+    } | null
   }
-}
-
-async function getRecentConversations() {
-  return prisma.conversation.findMany({
-    orderBy: { updatedAt: 'desc' },
-    take: 5,
-    select: {
-      id: true,
-      title: true,
-      messageCount: true,
-      updatedAt: true,
-    },
-  })
-}
-
-async function getRecentProjects() {
-  return prisma.project.findMany({
-    orderBy: { updatedAt: 'desc' },
-    take: 4,
-    select: {
-      id: true,
-      name: true,
-      category: true,
-      updatedAt: true,
-      _count: {
-        select: { conversations: true },
-      },
-    },
-  })
-}
-
-async function getTopKeywords() {
-  const conversations = await prisma.conversation.findMany({
-    where: {
-      keywords: { not: null },
-    },
-    select: {
-      keywords: true,
-    },
-    take: 100,
-  })
-
-  const keywordCount = new Map<string, number>()
-  for (const conv of conversations) {
-    if (conv.keywords) {
-      try {
-        const keywords = JSON.parse(conv.keywords) as string[]
-        for (const kw of keywords) {
-          keywordCount.set(kw, (keywordCount.get(kw) || 0) + 1)
-        }
-      } catch { /* ignore */ }
-    }
-  }
-
-  return Array.from(keywordCount.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 15)
-    .map(([keyword, count]) => ({ keyword, count }))
-}
-
-async function getTopCategories() {
-  const projects = await prisma.project.findMany({
-    select: {
-      category: true,
-      _count: {
-        select: { conversations: true },
-      },
-    },
-  })
-
-  return projects
-    .sort((a, b) => b._count.conversations - a._count.conversations)
-    .slice(0, 5)
-    .map(p => ({ category: p.category, count: p._count.conversations }))
-}
-
-async function getRecentActivity() {
-  const recentConvs = await prisma.conversation.findMany({
-    orderBy: { updatedAt: 'desc' },
-    take: 10,
-    select: {
-      id: true,
-      title: true,
-      updatedAt: true,
-      messageCount: true,
-      projects: {
-        select: {
-          project: {
-            select: { name: true },
-          },
-        },
-        take: 1,
-      },
-    },
-  })
-
-  return recentConvs.map((conv) => ({
-    id: conv.id,
-    title: conv.title,
-    date: conv.updatedAt,
-    type: 'conversation' as const,
-    meta: `${conv.messageCount} messages`,
-    project: conv.projects[0]?.project.name || null,
-  }))
+  recentConversations: Array<{
+    id: string
+    title: string
+    messageCount: number
+    updatedAt: string
+  }>
+  recentProjects: Array<{
+    id: string
+    name: string
+    category: string
+    updatedAt: string
+    _count: { conversations: number }
+  }>
+  topKeywords: Array<{ keyword: string; count: number }>
+  topCategories: Array<{ category: string; count: number }>
+  recentActivity: Array<{
+    id: string
+    title: string
+    date: string
+    type: string
+    meta: string
+    project: string | null
+  }>
 }
 
 const categoryColors: Record<string, string> = {
@@ -164,29 +69,71 @@ const categoryColors: Record<string, string> = {
   other: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
 }
 
-export default async function DashboardPage() {
-  const stats = await getStats()
-  const recentConversations = await getRecentConversations()
-  const recentProjects = await getRecentProjects()
-  const topKeywords = await getTopKeywords()
-  const topCategories = await getTopCategories()
-  const recentActivity = await getRecentActivity()
+export default function DashboardPage() {
+  const { t, locale } = useTranslation()
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/dashboard')
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')
+  }
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-4 w-72 mt-2" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-48" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) return null
+
+  const { stats, recentConversations, recentProjects, topKeywords, topCategories, recentActivity } = data
 
   const statCards = [
-    { name: 'Conversations', value: stats.conversationCount, icon: MessageSquare, href: '/conversations' },
-    { name: 'Messages', value: stats.messageCount, icon: MessageSquare, href: '/conversations' },
-    { name: 'Projects', value: stats.projectCount, icon: FolderOpen, href: '/projects' },
-    { name: 'Prompts', value: stats.promptCount, icon: Sparkles, href: '/prompts' },
-    { name: 'Code Snippets', value: stats.codeSnippetCount, icon: Code, href: '/code' },
+    { nameKey: 'dashboard.conversations', value: stats.conversationCount, icon: MessageSquare, href: '/conversations' },
+    { nameKey: 'dashboard.messages', value: stats.messageCount, icon: MessageSquare, href: '/conversations' },
+    { nameKey: 'dashboard.projects', value: stats.projectCount, icon: FolderOpen, href: '/projects' },
+    { nameKey: 'dashboard.prompts', value: stats.promptCount, icon: Sparkles, href: '/prompts' },
+    { nameKey: 'dashboard.code-snippets', value: stats.codeSnippetCount, icon: Code, href: '/code' },
   ]
 
   return (
     <div className="space-y-6">
       {/* Welcome */}
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h2>
         <p className="text-muted-foreground">
-          Your Claude conversation knowledge base
+          {t('dashboard.subtitle')}
         </p>
       </div>
 
@@ -195,11 +142,11 @@ export default async function DashboardPage() {
         {statCards.map((stat) => {
           const Icon = stat.icon
           return (
-            <Link key={stat.name} href={stat.href}>
+            <Link key={stat.nameKey} href={stat.href}>
               <Card className="hover:bg-muted/50 transition-colors h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    {stat.name}
+                    {t(stat.nameKey)}
                   </CardTitle>
                   <Icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -217,24 +164,24 @@ export default async function DashboardPage() {
         {/* Quick Start */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Quick Start</CardTitle>
+            <CardTitle className="text-lg">{t('dashboard.quick-start')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Import your Claude conversation history to get started.
+              {t('dashboard.quick-start-desc')}
             </p>
             <div className="flex flex-col gap-2">
               <Link
                 href="/import"
                 className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                Import Conversations
+                {t('dashboard.import-conversations')}
               </Link>
               <Link
                 href="/search"
                 className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
               >
-                Search All Data
+                {t('dashboard.search-all')}
               </Link>
             </div>
           </CardContent>
@@ -244,12 +191,12 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Conversations</CardTitle>
+              <CardTitle className="text-lg">{t('dashboard.recent-conversations')}</CardTitle>
               <Link
                 href="/conversations"
                 className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
               >
-                View all <ArrowRight className="h-3 w-3" />
+                {t('common.view-all')} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </CardHeader>
@@ -258,9 +205,9 @@ export default async function DashboardPage() {
               <div className="flex items-start gap-3 py-2">
                 <Clock className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">No imports yet</p>
+                  <p className="text-sm font-medium">{t('dashboard.no-imports-yet')}</p>
                   <p className="text-xs text-muted-foreground">
-                    Import your first conversation to get started
+                    {t('dashboard.import-first')}
                   </p>
                 </div>
               </div>
@@ -277,7 +224,7 @@ export default async function DashboardPage() {
                         {conv.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {conv.messageCount} messages • {new Date(conv.updatedAt).toLocaleDateString()}
+                        {t('common.messages-count', { count: conv.messageCount })} • {formatDate(conv.updatedAt)}
                       </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
@@ -292,12 +239,12 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Projects</CardTitle>
+              <CardTitle className="text-lg">{t('dashboard.recent-projects')}</CardTitle>
               <Link
                 href="/projects"
                 className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
               >
-                View all <ArrowRight className="h-3 w-3" />
+                {t('common.view-all')} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </CardHeader>
@@ -306,9 +253,9 @@ export default async function DashboardPage() {
               <div className="flex items-start gap-3 py-2">
                 <FolderOpen className="mt-0.5 h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">No projects yet</p>
+                  <p className="text-sm font-medium">{t('dashboard.no-projects-yet')}</p>
                   <p className="text-xs text-muted-foreground">
-                    Projects are created automatically when you import conversations
+                    {t('dashboard.projects-auto')}
                   </p>
                 </div>
               </div>
@@ -324,11 +271,11 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{project.name}</p>
                         <span className={`text-xs px-1.5 py-0.5 rounded ${categoryColors[project.category] || categoryColors.other}`}>
-                          {project.category}
+                          {translateCategory(locale, project.category)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {project._count.conversations} conversations • {new Date(project.updatedAt).toLocaleDateString()}
+                        {t('dashboard.conversations-label', { count: project._count.conversations })} • {formatDate(project.updatedAt)}
                       </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
@@ -342,15 +289,14 @@ export default async function DashboardPage() {
 
       {/* Top Keywords & Category Distribution */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Top Keywords */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Top Keywords</CardTitle>
+            <CardTitle className="text-lg">{t('dashboard.top-keywords')}</CardTitle>
           </CardHeader>
           <CardContent>
             {topKeywords.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Keywords will appear here after importing conversations
+                {t('dashboard.keywords-appear')}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -371,15 +317,14 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Category Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Category Distribution</CardTitle>
+            <CardTitle className="text-lg">{t('dashboard.category-distribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             {topCategories.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Categories will appear here after importing conversations
+                {t('dashboard.categories-appear')}
               </p>
             ) : (
               <div className="space-y-3">
@@ -389,8 +334,8 @@ export default async function DashboardPage() {
                   return (
                     <div key={category} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="capitalize">{category}</span>
-                        <span className="text-muted-foreground">{count} conversations</span>
+                        <span>{translateCategory(locale, category)}</span>
+                        <span className="text-muted-foreground">{count} {t('dashboard.conversations-label', { count: '' }).trim()}</span>
                       </div>
                       <div
                         className="h-2 bg-muted rounded-full overflow-hidden"
@@ -409,12 +354,11 @@ export default async function DashboardPage() {
 
       {/* System Status & Last Import */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Last Import Info */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Import Status
+              {t('dashboard.import-status')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -427,44 +371,42 @@ export default async function DashboardPage() {
                     stats.latestBatch?.status === 'processing' ? 'bg-blue-500 animate-pulse' :
                     'bg-green-500'
                   }`} />
-                  <span className="text-muted-foreground">Last import:</span>
+                  <span className="text-muted-foreground">{t('dashboard.last-import')}</span>
                   <span className="font-medium">
-                    {stats.latestImport.toLocaleDateString()} at{' '}
-                    {stats.latestImport.toLocaleTimeString()}
+                    {formatDate(stats.latestImport)}
                   </span>
                 </div>
                 {stats.latestBatch && (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-2 rounded bg-muted/50">
-                      <p className="text-muted-foreground">Batch conversations</p>
+                      <p className="text-muted-foreground">{t('dashboard.batch-conversations')}</p>
                       <p className="font-medium">{stats.latestBatch.conversationCount}</p>
                     </div>
                     <div className="p-2 rounded bg-muted/50">
-                      <p className="text-muted-foreground">Batch messages</p>
+                      <p className="text-muted-foreground">{t('dashboard.batch-messages')}</p>
                       <p className="font-medium">{stats.latestBatch.messageCount}</p>
                     </div>
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Total: {stats.conversationCount.toLocaleString()} conversations,{' '}
-                  {stats.messageCount.toLocaleString()} messages
+                  {t('dashboard.total')}: {stats.conversationCount.toLocaleString()} {t('dashboard.conversations-label', { count: '' }).trim()},{' '}
+                  {stats.messageCount.toLocaleString()} {t('dashboard.messages')}
                 </p>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
-                <span>No imports yet</span>
+                <span>{t('dashboard.no-imports')}</span>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* System Status */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Database className="h-4 w-4" />
-              System Status
+              {t('dashboard.system-status')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -472,30 +414,30 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <HardDrive className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Database</span>
+                  <span className="text-muted-foreground">{t('dashboard.database')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="font-medium">SQLite (Local)</span>
+                  <span className="font-medium">{t('dashboard.sqlite-local')}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Analysis</span>
+                  <span className="text-muted-foreground">{t('dashboard.analysis')}</span>
                 </div>
-                <span className="font-medium">Rule-based (Local)</span>
+                <span className="font-medium">{t('dashboard.rule-based-local')}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <Code className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Search</span>
+                  <span className="text-muted-foreground">{t('dashboard.search-engine')}</span>
                 </div>
-                <span className="font-medium">SQLite LIKE</span>
+                <span className="font-medium">{t('dashboard.sqlite-like')}</span>
               </div>
               <div className="p-3 bg-muted/50 rounded-lg mt-2">
                 <p className="text-xs text-muted-foreground">
-                  All data is stored locally on your machine. No data is sent to external servers.
+                  {t('dashboard.privacy-note')}
                 </p>
               </div>
             </div>
@@ -508,12 +450,12 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
+              <CardTitle className="text-lg">{t('dashboard.recent-activity')}</CardTitle>
               <Link
                 href="/conversations"
                 className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
               >
-                View all <ArrowRight className="h-3 w-3" />
+                {t('common.view-all')} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </CardHeader>
@@ -542,14 +484,7 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                         <span>{activity.meta}</span>
                         <span>•</span>
-                        <span>
-                          {new Date(activity.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
+                        <span>{formatDateTime(activity.date)}</span>
                       </div>
                     </div>
                   </Link>

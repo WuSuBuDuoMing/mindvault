@@ -7,6 +7,8 @@ import { Download, Upload, Loader2, CheckCircle, AlertCircle, Settings, Palette,
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useTranslation } from '@/i18n/locale-context'
+import { LocaleToggle } from '@/components/locale-toggle'
 
 interface ImportBatch {
   id: string
@@ -20,6 +22,7 @@ interface ImportBatch {
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
+  const { t, locale } = useTranslation()
   const [backing, setBacking] = useState(false)
   const [restoring, setRestoring] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -60,12 +63,12 @@ export default function SettingsPage() {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
-        setMessage({ type: 'success', text: 'Backup downloaded successfully!' })
+        setMessage({ type: 'success', text: t('settings.backup-success') })
       } else {
         throw new Error('Backup failed')
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to create backup' })
+      setMessage({ type: 'error', text: t('settings.backup-failed') })
     } finally {
       setBacking(false)
     }
@@ -92,30 +95,30 @@ export default function SettingsPage() {
         const result = await response.json()
         setMessage({
           type: 'success',
-          text: `Restored: ${result.imported} conversations imported, ${result.skipped} skipped`,
+          text: t('settings.restored', { imported: result.imported, skipped: result.skipped }),
         })
       } else {
         throw new Error('Restore failed')
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to restore backup. Please check the file format.' })
+      setMessage({ type: 'error', text: t('settings.restore-failed') })
     } finally {
       setRestoring(false)
     }
   }
 
   const themeOptions = [
-    { value: 'light', label: 'Light', description: 'Light theme for daytime use' },
-    { value: 'dark', label: 'Dark', description: 'Dark theme for low-light environments' },
-    { value: 'system', label: 'System', description: 'Follow your system preference' },
+    { value: 'light', label: t('settings.light'), description: t('settings.light-desc') },
+    { value: 'dark', label: t('settings.dark'), description: t('settings.dark-desc') },
+    { value: 'system', label: t('settings.system'), description: t('settings.system-desc') },
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('settings.title')}</h2>
         <p className="text-muted-foreground">
-          Manage your ClaudeNote settings and data
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -143,15 +146,15 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Appearance
+              {t('settings.appearance')}
             </CardTitle>
             <CardDescription>
-              Customize the look and feel
+              {t('settings.appearance-desc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="font-medium mb-3">Theme</p>
+              <p className="font-medium mb-3">{t('settings.theme')}</p>
               <div className="grid grid-cols-3 gap-2">
                 {themeOptions.map((option) => (
                   <button
@@ -172,6 +175,15 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Language */}
+            <div>
+              <p className="font-medium mb-3">{t('settings.language')}</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                {t('settings.language-desc')}
+              </p>
+              <LocaleToggle />
+            </div>
           </CardContent>
         </Card>
 
@@ -180,10 +192,10 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="h-5 w-5" />
-              Backup & Restore
+              {t('settings.backup-restore')}
             </CardTitle>
             <CardDescription>
-              Export or import your entire ClaudeNote database
+              {t('settings.backup-desc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -192,17 +204,17 @@ export default function SettingsPage() {
                 {backing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating backup...
+                    {t('settings.creating-backup')}
                   </>
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Download Backup
+                    {t('settings.download-backup')}
                   </>
                 )}
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
-                Downloads all conversations, prompts, code snippets, and projects as JSON
+                {t('settings.backup-desc-detail')}
               </p>
             </div>
 
@@ -211,7 +223,7 @@ export default function SettingsPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('common.or')}</span>
               </div>
             </div>
 
@@ -221,12 +233,12 @@ export default function SettingsPage() {
                   {restoring ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Restoring...
+                      {t('settings.restoring')}
                     </>
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      Restore from Backup
+                      {t('settings.restore-from-backup')}
                     </>
                   )}
                 </Button>
@@ -238,7 +250,7 @@ export default function SettingsPage() {
                 />
               </label>
               <p className="text-xs text-muted-foreground mt-2">
-                Import a previously exported backup file
+                {t('settings.restore-desc')}
               </p>
             </div>
           </CardContent>
@@ -249,52 +261,52 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Keyboard className="h-5 w-5" />
-              Keyboard Shortcuts
+              {t('settings.keyboard-shortcuts')}
             </CardTitle>
             <CardDescription>
-              Quick actions with keyboard
+              {t('settings.keyboard-desc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Open search</span>
+                <span className="text-muted-foreground">{t('settings.open-search')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + K</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Quick search</span>
+                <span className="text-muted-foreground">{t('settings.quick-search')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">/</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Dashboard</span>
+                <span className="text-muted-foreground">{t('sidebar.dashboard')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + 1</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Conversations</span>
+                <span className="text-muted-foreground">{t('sidebar.conversations')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + 2</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Projects</span>
+                <span className="text-muted-foreground">{t('sidebar.projects')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + 3</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Prompts</span>
+                <span className="text-muted-foreground">{t('sidebar.prompts')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + 4</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Code Snippets</span>
+                <span className="text-muted-foreground">{t('sidebar.code-snippets')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + 5</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Import</span>
+                <span className="text-muted-foreground">{t('sidebar.import')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + I</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Settings</span>
+                <span className="text-muted-foreground">{t('sidebar.settings')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl + ,</kbd>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Go back (detail pages)</span>
+                <span className="text-muted-foreground">{t('settings.go-back')}</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Esc</kbd>
               </div>
             </div>
@@ -306,29 +318,29 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Privacy
+              {t('settings.privacy')}
             </CardTitle>
             <CardDescription>
-              Data handling and privacy information
+              {t('settings.privacy-desc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-3">
                 <div className="h-2 w-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                <p>All data is stored locally in SQLite on your machine</p>
+                <p>{t('settings.data-local')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="h-2 w-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                <p>No data is sent to external servers or APIs</p>
+                <p>{t('settings.no-external')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="h-2 w-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                <p>Analysis is performed locally using rule-based algorithms</p>
+                <p>{t('settings.local-analysis')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="h-2 w-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                <p>Original Claude export files are not stored in the repository</p>
+                <p>{t('settings.no-original')}</p>
               </div>
             </div>
           </CardContent>
@@ -339,25 +351,23 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              AI Configuration
+              {t('settings.ai-configuration')}
             </CardTitle>
             <CardDescription>
-              Configure AI provider for enhanced features
+              {t('settings.ai-config-desc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Current Provider</p>
-                <p className="text-sm text-muted-foreground">Local (Rule-based)</p>
+                <p className="font-medium">{t('settings.current-provider')}</p>
+                <p className="text-sm text-muted-foreground">{t('settings.local-rule')}</p>
               </div>
-              <Badge variant="secondary">Default</Badge>
+              <Badge variant="secondary">{t('settings.default')}</Badge>
             </div>
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
-                ClaudeNote currently uses local rule-based analysis for summaries, keyword extraction,
-                prompt identification, and project categorization. AI-powered features (better summaries,
-                smart categorization) will be available in a future update. No external API calls are made.
+                {t('settings.ai-explanation')}
               </p>
             </div>
           </CardContent>
@@ -369,10 +379,10 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History className="h-5 w-5" />
-            Import History
+            {t('settings.import-history')}
           </CardTitle>
           <CardDescription>
-            Record of all data imports
+            {t('settings.import-history-desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -382,7 +392,7 @@ export default function SettingsPage() {
             </div>
           ) : importHistory.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No imports yet. Go to the Import page to get started.
+              {t('settings.no-imports-go')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -400,10 +410,10 @@ export default function SettingsPage() {
                     }`} />
                     <div>
                       <p className="text-sm font-medium">
-                        {batch.conversationCount} conversations, {batch.messageCount} messages
+                        {t('settings.n-conversations-messages', { conversations: batch.conversationCount, messages: batch.messageCount })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(batch.createdAt).toLocaleString()} • Source: {batch.source}
+                        {new Date(batch.createdAt).toLocaleString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')} {t('common.or')} {t('settings.source', { source: batch.source })}
                       </p>
                     </div>
                   </div>
@@ -412,7 +422,13 @@ export default function SettingsPage() {
                     batch.status === 'completed_with_errors' ? 'secondary' :
                     'outline'
                   }>
-                    {batch.status}
+                    {batch.status === 'completed'
+                      ? t('common.status-completed')
+                      : batch.status === 'completed_with_errors'
+                        ? t('common.status-completed_with_errors')
+                        : batch.status === 'processing'
+                          ? t('common.status-processing')
+                          : t('common.status-failed')}
                   </Badge>
                 </div>
               ))}
@@ -426,43 +442,43 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="h-5 w-5" />
-            Danger Zone
+            {t('settings.danger-zone')}
           </CardTitle>
           <CardDescription>
-            Irreversible actions. Please be careful.
+            {t('settings.danger-desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/20">
             <div>
-              <p className="font-medium">Clear All Data</p>
+              <p className="font-medium">{t('settings.clear-all-data')}</p>
               <p className="text-sm text-muted-foreground">
-                Delete all conversations, prompts, code snippets, and projects. This cannot be undone.
+                {t('settings.clear-desc')}
               </p>
             </div>
             <Button
               variant="destructive"
               size="sm"
               onClick={async () => {
-                if (confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
-                  if (confirm('This will permanently delete all conversations, prompts, code snippets, and projects. Continue?')) {
+                if (confirm(t('settings.clear-confirm-1'))) {
+                  if (confirm(t('settings.clear-confirm-2'))) {
                     try {
                       const response = await fetch('/api/data/clear', { method: 'DELETE' })
                       if (response.ok) {
-                        setMessage({ type: 'success', text: 'All data has been cleared.' })
+                        setMessage({ type: 'success', text: t('settings.all-cleared') })
                         window.location.reload()
                       } else {
-                        setMessage({ type: 'error', text: 'Failed to clear data.' })
+                        setMessage({ type: 'error', text: t('settings.clear-failed') })
                       }
                     } catch {
-                      setMessage({ type: 'error', text: 'Failed to clear data.' })
+                      setMessage({ type: 'error', text: t('settings.clear-failed') })
                     }
                   }
                 }
               }}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear All
+              {t('settings.clear-all')}
             </Button>
           </div>
         </CardContent>

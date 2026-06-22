@@ -1,0 +1,18 @@
+{
+  "title": "代码片段",
+  "subtitle": "从对话中提取的代码块",
+  "export-all": "导出全部",
+  "search-placeholder": "搜索代码...",
+  "all": "全部",
+  "n-snippets": "{{count}} 条代码片段",
+  "language-filter": "语言: {{lang}}",
+  "matching": "匹配: \"{{query}}\"",
+  "no-matching": "没有匹配的代码片段",
+  "no-code": "尚无代码片段",
+  "try-adjusting": "尝试调整搜索或筛选条件",
+  "auto-extracted": "代码块在导入数据时会从对话中自动提取。",
+  "copy-code": "复制代码",
+  "code-snippet": "代码片段",
+  "lines": "行",
+  "truncated": "// ... 已截断"
+}

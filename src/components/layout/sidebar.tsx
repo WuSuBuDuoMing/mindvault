@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useTranslation } from '@/i18n/locale-context'
 
 interface NavCounts {
   conversations: number
@@ -25,20 +26,6 @@ interface NavCounts {
   codeSnippets: number
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, countKey: null },
-  { name: 'Import', href: '/import', icon: Import, countKey: null },
-  { name: 'Conversations', href: '/conversations', icon: MessageSquare, countKey: 'conversations' as const },
-  { name: 'Projects', href: '/projects', icon: FolderOpen, countKey: 'projects' as const },
-  { name: 'Prompts', href: '/prompts', icon: Sparkles, countKey: 'prompts' as const },
-  { name: 'Code Snippets', href: '/code', icon: Code, countKey: 'codeSnippets' as const },
-  { name: 'Search', href: '/search', icon: Search, countKey: null },
-]
-
-const bottomNavigation = [
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
-
 interface SidebarProps {
   onNavigate?: () => void
 }
@@ -46,6 +33,21 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const [counts, setCounts] = useState<NavCounts | null>(null)
+  const { t } = useTranslation()
+
+  const navigation = [
+    { nameKey: 'sidebar.dashboard', href: '/', icon: LayoutDashboard, countKey: null },
+    { nameKey: 'sidebar.import', href: '/import', icon: Import, countKey: null },
+    { nameKey: 'sidebar.conversations', href: '/conversations', icon: MessageSquare, countKey: 'conversations' as const },
+    { nameKey: 'sidebar.projects', href: '/projects', icon: FolderOpen, countKey: 'projects' as const },
+    { nameKey: 'sidebar.prompts', href: '/prompts', icon: Sparkles, countKey: 'prompts' as const },
+    { nameKey: 'sidebar.code-snippets', href: '/code', icon: Code, countKey: 'codeSnippets' as const },
+    { nameKey: 'sidebar.search', href: '/search', icon: Search, countKey: null },
+  ]
+
+  const bottomNavigation = [
+    { nameKey: 'sidebar.settings', href: '/settings', icon: Settings },
+  ]
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -68,7 +70,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold" onClick={onNavigate}>
           <MessageSquare className="h-6 w-6" />
-          <span className="">ClaudeNote</span>
+          <span className="">{t('common.app-name')}</span>
         </Link>
       </div>
 
@@ -83,7 +85,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
             return (
               <Link
-                key={item.name}
+                key={item.nameKey}
                 href={item.href}
                 onClick={onNavigate}
               >
@@ -95,7 +97,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="flex-1 text-left">{item.name}</span>
+                  <span className="flex-1 text-left">{t(item.nameKey)}</span>
                   {count !== null && count > 0 && (
                     <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-xs">
                       {count > 999 ? '999+' : count}
@@ -117,7 +119,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
             return (
               <Link
-                key={item.name}
+                key={item.nameKey}
                 href={item.href}
                 onClick={onNavigate}
               >
@@ -129,7 +131,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  {item.name}
+                  {t(item.nameKey)}
                 </Button>
               </Link>
             )

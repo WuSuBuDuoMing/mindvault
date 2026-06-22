@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/pagination'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 interface Conversation {
   id: string
@@ -25,6 +26,7 @@ interface Conversation {
 }
 
 export default function ConversationsPage() {
+  const { t, locale } = useTranslation()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -108,7 +110,7 @@ export default function ConversationsPage() {
 
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return
-    if (!confirm(`Delete ${selectedIds.size} conversation(s)? This cannot be undone.`)) return
+    if (!confirm(t('conversations.delete-confirm', { count: selectedIds.size }))) return
 
     setDeleting(true)
     try {
@@ -151,11 +153,11 @@ export default function ConversationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Conversations</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t('conversations.title')}</h2>
           <p className="text-muted-foreground">
             {isSelectMode
-              ? `${selectedIds.size} selected`
-              : 'Browse and search your Claude conversations'}
+              ? t('conversations.selected-count', { count: selectedIds.size })
+              : t('conversations.subtitle-browse')}
           </p>
         </div>
         {isSelectMode && (
@@ -165,7 +167,7 @@ export default function ConversationsPage() {
               size="sm"
               onClick={() => setSelectedIds(new Set())}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -178,7 +180,7 @@ export default function ConversationsPage() {
               ) : (
                 <Trash2 className="h-4 w-4 mr-2" />
               )}
-              Delete ({selectedIds.size})
+              {t('conversations.delete-selected', { count: selectedIds.size })}
             </Button>
           </div>
         )}
@@ -190,7 +192,7 @@ export default function ConversationsPage() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search conversations..."
+            placeholder={t('conversations.search-placeholder')}
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -202,21 +204,21 @@ export default function ConversationsPage() {
             size="sm"
             onClick={() => { setSortBy('newest'); setPage(1) }}
           >
-            Newest
+            {t('conversations.newest')}
           </Button>
           <Button
             variant={sortBy === 'oldest' ? 'default' : 'outline'}
             size="sm"
             onClick={() => { setSortBy('oldest'); setPage(1) }}
           >
-            Oldest
+            {t('conversations.oldest')}
           </Button>
           <Button
             variant={sortBy === 'mostMessages' ? 'default' : 'outline'}
             size="sm"
             onClick={() => { setSortBy('mostMessages'); setPage(1) }}
           >
-            Most Messages
+            {t('conversations.most-messages')}
           </Button>
           <Button
             variant={filterFavorites ? 'default' : 'outline'}
@@ -224,7 +226,7 @@ export default function ConversationsPage() {
             onClick={() => { setFilterFavorites(!filterFavorites); setPage(1) }}
           >
             <Star className={`h-4 w-4 mr-1 ${filterFavorites ? 'fill-current' : ''}`} />
-            Favorites
+            {t('conversations.favorites')}
           </Button>
         </div>
       </div>
@@ -239,19 +241,19 @@ export default function ConversationsPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? 'No matching conversations' : 'No conversations yet'}
+              {searchQuery ? t('conversations.no-matching') : t('conversations.no-conversations')}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               {searchQuery
-                ? 'Try adjusting your search query'
-                : 'Import your Claude conversation history to see them here.'}
+                ? t('conversations.try-adjusting')
+                : t('conversations.import-first')}
             </p>
             {!searchQuery && (
               <Link
                 href="/import"
                 className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                Import Conversations
+                {t('conversations.import-conversations')}
               </Link>
             )}
           </CardContent>
@@ -272,10 +274,10 @@ export default function ConversationsPage() {
                 ) : (
                   <Square className="h-4 w-4 mr-2" />
                 )}
-                {selectedIds.size === conversations.length ? 'Deselect All' : 'Select All'}
+                {selectedIds.size === conversations.length ? t('conversations.deselect-all') : t('conversations.select-all')}
               </Button>
               <span className="text-xs text-muted-foreground">
-                {conversations.length} conversation(s)
+                {t('conversations.n-conversations', { count: conversations.length })}
               </span>
             </div>
           )}
@@ -312,7 +314,7 @@ export default function ConversationsPage() {
                                 {conv.title}
                               </h3>
                               <Badge variant="secondary" className="ml-auto flex-shrink-0 text-xs">
-                                {conv.messageCount} msgs
+                                {conv.messageCount} {t('conversations.msgs')}
                               </Badge>
                             </div>
                         {conv.summary && (
@@ -323,7 +325,7 @@ export default function ConversationsPage() {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>{new Date(conv.createdAt).toLocaleDateString()}</span>
+                            <span>{new Date(conv.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}</span>
                           </div>
                           {conv.projects.length > 0 && (
                             <div className="flex items-center gap-1">

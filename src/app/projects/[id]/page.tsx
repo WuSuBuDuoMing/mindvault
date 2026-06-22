@@ -8,6 +8,8 @@ import { ArrowLeft, Download, Loader2, MessageSquare, Calendar, Clock, Sparkles,
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
+import { translateCategory } from '@/i18n'
 
 interface Conversation {
   id: string
@@ -39,6 +41,7 @@ interface TimelineItem {
 
 export default function ProjectDetailPage() {
   const params = useParams()
+  const { t, locale } = useTranslation()
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -146,9 +149,9 @@ export default function ProjectDetailPage() {
             </Button>
           </Link>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Project Not Found</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{t('project-detail.not-found-title')}</h2>
             <p className="text-muted-foreground">
-              This project doesn&apos;t exist yet.
+              {t('project-detail.not-found-desc')}
             </p>
           </div>
         </div>
@@ -173,13 +176,13 @@ export default function ProjectDetailPage() {
               <span className="text-2xl">{getCategoryIcon(project.category)}</span>
               <h2 className="text-2xl lg:text-3xl font-bold tracking-tight">{project.name}</h2>
               <Badge className={getCategoryColor(project.category)}>
-                {project.category}
+                {translateCategory(locale, project.category)}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              {project.conversations.length} conversation(s) • Created{' '}
-              {new Date(project.createdAt).toLocaleDateString()} • Updated{' '}
-              {new Date(project.updatedAt).toLocaleDateString()}
+              {t('project-detail.n-conversations', { count: project.conversations.length })} • {t('project-detail.created')}{' '}
+              {new Date(project.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')} • {t('project-detail.last-updated')}{' '}
+              {new Date(project.updatedAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
             </p>
           </div>
         </div>
@@ -189,7 +192,7 @@ export default function ProjectDetailPage() {
           ) : (
             <Download className="mr-2 h-4 w-4" />
           )}
-          Export Project
+          {t('project-detail.export-project')}
         </Button>
       </div>
 
@@ -197,7 +200,7 @@ export default function ProjectDetailPage() {
       {project.summary && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Project Summary</CardTitle>
+            <CardTitle className="text-lg">{t('project-detail.project-summary')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground leading-relaxed">{project.summary}</p>
@@ -213,20 +216,20 @@ export default function ProjectDetailPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  Conversations
+                  {t('project-detail.conversations-title')}
                 </CardTitle>
                 <Badge variant="secondary">{project.conversations.length}</Badge>
               </div>
               <CardDescription>
-                All conversations in this project
+                {t('project-detail.conversations-desc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {project.conversations.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No conversations in this project yet.</p>
-                  <p className="text-xs mt-1">Import conversations to see them here.</p>
+                  <p>{t('project-detail.no-conversations')}</p>
+                  <p className="text-xs mt-1">{t('project-detail.import-to-see')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -257,7 +260,7 @@ export default function ProjectDetailPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>{new Date(conversation.createdAt).toLocaleDateString()}</span>
+                            <span>{new Date(conversation.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}</span>
                           </div>
                         </div>
                       </div>
@@ -275,17 +278,17 @@ export default function ProjectDetailPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Timeline
+                {t('project-detail.timeline')}
               </CardTitle>
               <CardDescription>
-                Activity timeline for this project
+                {t('project-detail.timeline-desc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {timeline.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No activity yet</p>
+                  <p className="text-sm">{t('project-detail.no-activity')}</p>
                 </div>
               ) : (
                 <div className="relative">
@@ -307,7 +310,7 @@ export default function ProjectDetailPage() {
                             {item.title}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(item.date).toLocaleDateString('en-US', {
+                            {new Date(item.date).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',
@@ -325,22 +328,22 @@ export default function ProjectDetailPage() {
           {/* Project Stats */}
           <Card className="mt-4">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Statistics</CardTitle>
+              <CardTitle className="text-lg">{t('project-detail.statistics')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total Conversations</span>
+                  <span className="text-muted-foreground">{t('project-detail.total-conversations')}</span>
                   <span className="font-medium">{project.conversations.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total Messages</span>
+                  <span className="text-muted-foreground">{t('project-detail.total-messages')}</span>
                   <span className="font-medium">
                     {project.conversations.reduce((sum, c) => sum + c.conversation.messageCount, 0)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Avg Messages/Conv</span>
+                  <span className="text-muted-foreground">{t('project-detail.avg-messages-conv')}</span>
                   <span className="font-medium">
                     {project.conversations.length > 0
                       ? Math.round(
@@ -351,22 +354,22 @@ export default function ProjectDetailPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Category</span>
+                  <span className="text-muted-foreground">{t('project-detail.category')}</span>
                   <Badge variant="outline" className="text-xs">
-                    {project.category}
+                    {translateCategory(locale, project.category)}
                   </Badge>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Created</span>
+                    <span className="text-muted-foreground">{t('project-detail.created')}</span>
                     <span className="font-medium">
-                      {new Date(project.createdAt).toLocaleDateString()}
+                      {new Date(project.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground">Last Updated</span>
+                    <span className="text-muted-foreground">{t('project-detail.last-updated')}</span>
                     <span className="font-medium">
-                      {new Date(project.updatedAt).toLocaleDateString()}
+                      {new Date(project.updatedAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                     </span>
                   </div>
                 </div>

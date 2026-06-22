@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/ui/pagination'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 interface PromptItem {
   id: string
@@ -24,6 +25,7 @@ interface PromptItem {
 }
 
 export default function PromptsPage() {
+  const { t, locale } = useTranslation()
   const [prompts, setPrompts] = useState<PromptItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -141,9 +143,9 @@ export default function PromptsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Prompts</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t('prompts.title')}</h2>
           <p className="text-muted-foreground">
-            Your extracted prompt library — reusable prompts from conversations
+            {t('prompts.subtitle')}
           </p>
         </div>
         {prompts.length > 0 && (
@@ -153,7 +155,7 @@ export default function PromptsPage() {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Export All
+            {t('prompts.export-all')}
           </Button>
         )}
       </div>
@@ -165,7 +167,7 @@ export default function PromptsPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search prompts..."
+              placeholder={t('prompts.search-placeholder')}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
@@ -178,7 +180,7 @@ export default function PromptsPage() {
             className="flex items-center gap-2"
           >
             <Star className={`h-4 w-4 ${filterFavorites ? 'fill-current' : ''}`} />
-            Favorites
+            {t('prompts.favorites')}
           </Button>
         </div>
 
@@ -192,7 +194,7 @@ export default function PromptsPage() {
               onClick={() => { setSelectedTag(null); setPage(1) }}
               className="h-7 text-xs"
             >
-              All
+              {t('prompts.all')}
             </Button>
             {allTags.slice(0, 10).map((tag) => (
               <Button
@@ -212,9 +214,9 @@ export default function PromptsPage() {
       {/* Stats */}
       {!loading && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{filteredPrompts.length} prompt(s)</span>
-          {filterFavorites && <span>• Showing favorites only</span>}
-          {selectedTag && <span>• Tagged: {selectedTag}</span>}
+          <span>{t('prompts.n-prompts', { count: filteredPrompts.length })}</span>
+          {filterFavorites && <span>• {t('prompts.showing-favorites')}</span>}
+          {selectedTag && <span>• {t('prompts.tagged', { tag: selectedTag })}</span>}
         </div>
       )}
 
@@ -229,13 +231,13 @@ export default function PromptsPage() {
             <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
               {searchQuery || filterFavorites || selectedTag
-                ? 'No matching prompts'
-                : 'No prompts yet'}
+                ? t('prompts.no-matching')
+                : t('prompts.no-prompts')}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               {searchQuery || filterFavorites || selectedTag
-                ? 'Try adjusting your search or filters'
-                : 'Prompts are automatically extracted from your conversations when you import data.'}
+                ? t('prompts.try-adjusting')
+                : t('prompts.auto-extracted')}
             </p>
           </CardContent>
         </Card>
@@ -253,7 +255,7 @@ export default function PromptsPage() {
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                         )}
                         <CardTitle className="text-base">
-                          {prompt.title || 'Untitled Prompt'}
+                          {prompt.title || t('prompts.untitled-prompt')}
                         </CardTitle>
                       </div>
                       <CardDescription className="text-sm">
@@ -267,7 +269,7 @@ export default function PromptsPage() {
                               onClick={() => setExpandedId(prompt.id)}
                               className="text-primary hover:underline ml-1"
                             >
-                              Show more
+                              {t('prompts.show-more')}
                             </button>
                           </>
                         )}
@@ -277,7 +279,7 @@ export default function PromptsPage() {
                             onClick={() => setExpandedId(null)}
                             className="text-primary hover:underline mt-1 block"
                           >
-                            Show less
+                            {t('prompts.show-less')}
                           </button>
                         )}
                       </CardDescription>
@@ -288,7 +290,7 @@ export default function PromptsPage() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => handleToggleFavorite(prompt.id, prompt.isFavorite)}
-                        title={prompt.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                        title={prompt.isFavorite ? t('prompts.remove-favorites') : t('prompts.add-favorites')}
                       >
                         {prompt.isFavorite ? (
                           <StarOff className="h-4 w-4" />
@@ -301,7 +303,7 @@ export default function PromptsPage() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => handleCopy(prompt.content, prompt.id)}
-                        title="Copy prompt"
+                        title={t('prompts.copy-prompt')}
                       >
                         {copiedId === prompt.id ? (
                           <Copy className="h-4 w-4 text-green-500" />
@@ -335,7 +337,7 @@ export default function PromptsPage() {
                         </Badge>
                       ))}
                       <span className="text-xs text-muted-foreground">
-                        {new Date(prompt.createdAt).toLocaleDateString()}
+                        {new Date(prompt.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                       </span>
                     </div>
                   </div>

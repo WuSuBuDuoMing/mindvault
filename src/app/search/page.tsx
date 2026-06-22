@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSearchParams } from 'next/navigation'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 interface SearchResult {
   id: string
@@ -27,6 +28,7 @@ function SearchContent() {
 }
 
 function SearchPageInner({ initialQuery }: { initialQuery: string }) {
+  const { t, locale } = useTranslation()
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -146,6 +148,16 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
     }
   }
 
+  const translateType = (type: string) => {
+    switch (type) {
+      case 'conversation': return t('search.conversation')
+      case 'prompt': return t('search.prompt')
+      case 'code': return t('search.code')
+      case 'project': return t('search.project')
+      default: return type
+    }
+  }
+
   const filteredResults = typeFilter
     ? results.filter((r) => r.type === typeFilter)
     : results
@@ -158,9 +170,9 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Search</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('search.title')}</h2>
         <p className="text-muted-foreground">
-          Search across all your conversations, prompts, and code
+          {t('search.subtitle')}
         </p>
       </div>
 
@@ -169,7 +181,7 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
         <SearchIcon className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search everything..."
+          placeholder={t('search.placeholder')}
           className="pl-10 text-lg py-6"
           value={query}
           onChange={handleInputChange}
@@ -185,7 +197,7 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
             size="sm"
             onClick={() => setTypeFilter(null)}
           >
-            All ({results.length})
+            {t('search.all')} ({results.length})
           </Button>
           {Object.entries(typeCounts).map(([type, count]) => (
             <Button
@@ -194,7 +206,7 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
               size="sm"
               onClick={() => setTypeFilter(typeFilter === type ? null : type)}
             >
-              {type} ({count})
+              {translateType(type)} ({count})
             </Button>
           ))}
         </div>
@@ -209,9 +221,9 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <SearchIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Search your data</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('search.search-your-data')}</h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Enter a keyword to search across conversations, prompts, code snippets, and projects.
+              {t('search.search-hint')}
             </p>
           </CardContent>
         </Card>
@@ -219,9 +231,9 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <SearchIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No results found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('search.no-results')}</h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              No matches found for &quot;{query}&quot;. Try a different search term.
+              {t('search.no-results-desc', { query })}
             </p>
           </CardContent>
         </Card>
@@ -229,7 +241,7 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Found {filteredResults.length} result(s)
+              {t('search.found-n-results', { count: filteredResults.length })}
             </p>
             <div className="flex gap-2">
               {['conversation', 'prompt', 'code', 'project'].map((type) => {
@@ -237,7 +249,7 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
                 if (count === 0) return null
                 return (
                   <Badge key={type} variant="outline" className="text-xs">
-                    {type}: {count}
+                    {translateType(type)}: {count}
                   </Badge>
                 )
               })}
@@ -257,7 +269,7 @@ function SearchPageInner({ initialQuery }: { initialQuery: string }) {
                           {highlightMatch(result.title, query)}
                         </CardTitle>
                         <Badge className={getTypeBadgeColor(result.type)}>
-                          {result.type}
+                          {translateType(result.type)}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">

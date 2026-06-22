@@ -1,0 +1,23 @@
+{
+  "not-found-title": "项目未找到",
+  "not-found-desc": "此项目尚不存在。",
+  "n-conversations": "{{count}} 条对话",
+  "created": "创建于",
+  "updated": "更新于",
+  "export-project": "导出项目",
+  "project-summary": "项目摘要",
+  "conversations-title": "对话",
+  "conversations-desc": "此项目中的所有对话",
+  "no-conversations": "此项目中尚无对话。",
+  "import-to-see": "导入对话以在此查看。",
+  "timeline": "时间线",
+  "timeline-desc": "此项目的活动时间线",
+  "no-activity": "暂无活动",
+  "statistics": "统计",
+  "total-conversations": "总对话数",
+  "total-messages": "总消息数",
+  "avg-messages-conv": "平均消息/对话",
+  "category": "分类",
+  "created-label": "创建时间",
+  "last-updated": "更新时间"
+}

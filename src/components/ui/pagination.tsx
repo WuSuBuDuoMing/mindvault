@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useTranslation } from '@/i18n/locale-context'
 
 interface PaginationProps {
   page: number
@@ -10,6 +11,8 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
+  const { t } = useTranslation()
+
   if (totalPages <= 1) return null
 
   const getVisiblePages = () => {
@@ -51,7 +54,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         disabled={page <= 1}
       >
         <ChevronLeft className="h-4 w-4" />
-        Previous
+        {t('common.previous')}
       </Button>
 
       {getVisiblePages().map((pageNumber, index) => {
@@ -81,7 +84,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
       >
-        Next
+        {t('common.next')}
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

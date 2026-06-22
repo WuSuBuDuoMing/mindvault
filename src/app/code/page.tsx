@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/ui/pagination'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 interface CodeSnippet {
   id: string
@@ -23,6 +24,7 @@ interface CodeSnippet {
 }
 
 export default function CodePage() {
+  const { t, locale } = useTranslation()
   const [snippets, setSnippets] = useState<CodeSnippet[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,9 +113,9 @@ export default function CodePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Code Snippets</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t('code.title')}</h2>
           <p className="text-muted-foreground">
-            Code blocks extracted from conversations
+            {t('code.subtitle')}
           </p>
         </div>
         {snippets.length > 0 && (
@@ -123,7 +125,7 @@ export default function CodePage() {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Export All
+            {t('code.export-all')}
           </Button>
         )}
       </div>
@@ -135,7 +137,7 @@ export default function CodePage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search code..."
+              placeholder={t('code.search-placeholder')}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
@@ -153,7 +155,7 @@ export default function CodePage() {
               onClick={() => { setLanguageFilter(null); setPage(1) }}
               className="h-7 text-xs"
             >
-              All ({snippets.length})
+              {t('code.all')} ({snippets.length})
             </Button>
             {languages.slice(0, 8).map((lang) => (
               <Button
@@ -173,9 +175,9 @@ export default function CodePage() {
       {/* Stats */}
       {!loading && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{filteredSnippets.length} snippet(s)</span>
-          {languageFilter && <span>• Language: {languageFilter}</span>}
-          {searchQuery && <span>• Matching: &quot;{searchQuery}&quot;</span>}
+          <span>{t('code.n-snippets', { count: filteredSnippets.length })}</span>
+          {languageFilter && <span>• {t('code.language-filter', { lang: languageFilter })}</span>}
+          {searchQuery && <span>• {t('code.matching', { query: searchQuery })}</span>}
         </div>
       )}
 
@@ -189,12 +191,12 @@ export default function CodePage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Code className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {searchQuery || languageFilter ? 'No matching snippets' : 'No code snippets yet'}
+              {searchQuery || languageFilter ? t('code.no-matching') : t('code.no-code')}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               {searchQuery || languageFilter
-                ? 'Try adjusting your search or filter'
-                : 'Code blocks are automatically extracted from your conversations when you import data.'}
+                ? t('code.try-adjusting')
+                : t('code.auto-extracted')}
             </p>
           </CardContent>
         </Card>
@@ -207,7 +209,7 @@ export default function CodePage() {
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="text-base">
-                        {snippet.description || 'Code Snippet'}
+                        {snippet.description || t('code.code-snippet')}
                       </CardTitle>
                       {snippet.language && (
                         <Badge variant="secondary" className="text-xs">
@@ -230,7 +232,7 @@ export default function CodePage() {
                     size="icon"
                     className="h-8 w-8 flex-shrink-0"
                     onClick={() => handleCopy(snippet.code, snippet.id)}
-                    title="Copy code"
+                    title={t('code.copy-code')}
                   >
                     {copiedId === snippet.id ? (
                       <Check className="h-4 w-4 text-green-500" />
@@ -256,15 +258,15 @@ export default function CodePage() {
                     </div>
                     <pre className="flex-1 p-4 overflow-x-auto text-sm">
                       <code>{snippet.code.length > 1000
-                        ? snippet.code.substring(0, 1000) + '\n\n// ... truncated'
+                        ? snippet.code.substring(0, 1000) + '\n\n' + t('code.truncated')
                         : snippet.code
                       }</code>
                     </pre>
                   </div>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{new Date(snippet.createdAt).toLocaleDateString()}</span>
-                  <span>{snippet.code.split('\n').length} lines</span>
+                  <span>{new Date(snippet.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}</span>
+                  <span>{snippet.code.split('\n').length} {t('code.lines')}</span>
                 </div>
               </CardContent>
             </Card>

@@ -16,6 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
+import { translateCategory } from '@/i18n'
 
 interface Project {
   id: string
@@ -30,6 +32,7 @@ interface Project {
 }
 
 export default function ProjectsPage() {
+  const { t, locale } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -106,14 +109,14 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Projects</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t('projects.title')}</h2>
           <p className="text-muted-foreground">
-            Auto-categorized conversation groups
+            {t('projects.subtitle')}
           </p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Create Project
+          {t('projects.create-project')}
         </Button>
       </div>
 
@@ -122,7 +125,7 @@ export default function ProjectsPage() {
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search projects..."
+          placeholder={t('projects.search-placeholder')}
           className="pl-8"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -139,12 +142,12 @@ export default function ProjectsPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? 'No matching projects' : 'No projects yet'}
+              {searchQuery ? t('projects.no-matching') : t('projects.no-projects')}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               {searchQuery
-                ? 'Try adjusting your search query'
-                : 'Projects are automatically created when you import conversations.'}
+                ? t('projects.try-adjusting')
+                : t('projects.auto-created')}
             </p>
           </CardContent>
         </Card>
@@ -159,21 +162,21 @@ export default function ProjectsPage() {
                       {project.name}
                     </CardTitle>
                     <Badge className={`${getCategoryColor(project.category)} flex-shrink-0`}>
-                      {project.category}
+                      {translateCategory(locale, project.category)}
                     </Badge>
                   </div>
                   <CardDescription className="line-clamp-2 text-xs">
-                    {project.summary || 'No summary available'}
+                    {project.summary || t('projects.no-summary')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <MessageSquare className="h-3 w-3" />
-                      <span>{project._count.conversations} conversations</span>
+                      <span>{t('projects.n-conversations', { count: project._count.conversations })}</span>
                     </div>
                     <span>
-                      {new Date(project.updatedAt).toLocaleDateString()}
+                      {new Date(project.updatedAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                     </span>
                   </div>
                 </CardContent>
@@ -187,56 +190,56 @@ export default function ProjectsPage() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>{t('projects.create-new-project')}</DialogTitle>
             <DialogDescription>
-              Create a new project to organize your conversations.
+              {t('projects.create-project-desc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Name</label>
+              <label className="text-sm font-medium">{t('projects.name')}</label>
               <Input
                 value={newProject.name}
                 onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                placeholder="Project name"
+                placeholder={t('projects.project-name-placeholder')}
                 className="mt-1"
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Category</label>
+              <label className="text-sm font-medium">{t('projects.category')}</label>
               <select
                 value={newProject.category}
                 onChange={(e) => setNewProject({ ...newProject, category: e.target.value })}
                 className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 title="Project category"
               >
-                <option value="code">Code</option>
-                <option value="course">Course</option>
-                <option value="prompt">Prompt</option>
-                <option value="creative">Creative</option>
-                <option value="research">Research</option>
-                <option value="business">Business</option>
-                <option value="data">Data</option>
-                <option value="design">Design</option>
-                <option value="other">Other</option>
+                <option value="code">{t('projects.code')}</option>
+                <option value="course">{t('projects.course')}</option>
+                <option value="prompt">{t('projects.prompt')}</option>
+                <option value="creative">{t('projects.creative')}</option>
+                <option value="research">{t('projects.research')}</option>
+                <option value="business">{t('projects.business')}</option>
+                <option value="data">{t('projects.data')}</option>
+                <option value="design">{t('projects.design')}</option>
+                <option value="other">{t('projects.other')}</option>
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Summary (optional)</label>
+              <label className="text-sm font-medium">{t('projects.summary-optional')}</label>
               <Input
                 value={newProject.summary}
                 onChange={(e) => setNewProject({ ...newProject, summary: e.target.value })}
-                placeholder="Brief description"
+                placeholder={t('projects.brief-desc')}
                 className="mt-1"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleCreateProject} disabled={!newProject.name.trim() || creating}>
-              {creating ? 'Creating...' : 'Create'}
+              {creating ? t('projects.creating') : t('projects.create')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,0 +1,18 @@
+{
+  "title": "Code Snippets",
+  "subtitle": "Code blocks extracted from conversations",
+  "export-all": "Export All",
+  "search-placeholder": "Search code...",
+  "all": "All",
+  "n-snippets": "{{count}} snippets",
+  "language-filter": "Language: {{lang}}",
+  "matching": "Matching: \"{{query}}\"",
+  "no-matching": "No matching snippets",
+  "no-code": "No code snippets yet",
+  "try-adjusting": "Try adjusting your search or filter",
+  "auto-extracted": "Code blocks are automatically extracted from your conversations when you import data.",
+  "copy-code": "Copy code",
+  "code-snippet": "Code Snippet",
+  "lines": "lines",
+  "truncated": "// ... truncated"
+}

@@ -1,0 +1,21 @@
+{
+  "title": "Prompts",
+  "subtitle": "Your extracted prompt library — reusable prompts from conversations",
+  "export-all": "Export All",
+  "search-placeholder": "Search prompts...",
+  "favorites": "Favorites",
+  "all": "All",
+  "n-prompts": "{{count}} prompts",
+  "showing-favorites": "Showing favorites only",
+  "tagged": "Tagged: {{tag}}",
+  "no-matching": "No matching prompts",
+  "no-prompts": "No prompts yet",
+  "try-adjusting": "Try adjusting your search or filters",
+  "auto-extracted": "Prompts are automatically extracted from your conversations when you import data.",
+  "untitled-prompt": "Untitled Prompt",
+  "show-more": "Show more",
+  "show-less": "Show less",
+  "add-favorites": "Add to favorites",
+  "remove-favorites": "Remove from favorites",
+  "copy-prompt": "Copy prompt"
+}

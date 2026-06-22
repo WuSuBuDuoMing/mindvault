@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 interface Message {
   id: string
@@ -51,6 +52,7 @@ interface Conversation {
 
 export default function ConversationDetailPage() {
   const params = useParams()
+  const { t, locale } = useTranslation()
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -166,7 +168,7 @@ export default function ConversationDetailPage() {
       case 'user':
       case 'human':
         return {
-          label: 'User',
+          label: t('conversation-detail.user'),
           className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
           bubbleClass: 'bg-blue-50 dark:bg-blue-950/30',
           icon: '👤',
@@ -174,14 +176,14 @@ export default function ConversationDetailPage() {
       case 'assistant':
       case 'claude':
         return {
-          label: 'Assistant',
+          label: t('conversation-detail.assistant'),
           className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
           bubbleClass: 'bg-green-50 dark:bg-green-950/30',
           icon: '🤖',
         }
       case 'system':
         return {
-          label: 'System',
+          label: t('conversation-detail.system'),
           className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
           bubbleClass: 'bg-gray-50 dark:bg-gray-900/30',
           icon: '⚙️',
@@ -214,9 +216,9 @@ export default function ConversationDetailPage() {
             </Button>
           </Link>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Conversation Not Found</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{t('conversation-detail.not-found-title')}</h2>
             <p className="text-muted-foreground">
-              This conversation doesn&apos;t exist or hasn&apos;t been imported yet.
+              {t('conversation-detail.not-found-desc')}
             </p>
           </div>
         </div>
@@ -237,8 +239,8 @@ export default function ConversationDetailPage() {
           <div>
             <h2 className="text-2xl lg:text-3xl font-bold tracking-tight">{conversation.title}</h2>
             <p className="text-sm text-muted-foreground">
-              {conversation.messageCount} messages • Created{' '}
-              {new Date(conversation.createdAt).toLocaleDateString()}
+              {t('conversation-detail.messages-count', { count: conversation.messageCount })} • {t('conversation-detail.created')}{' '}
+              {new Date(conversation.createdAt).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
             </p>
           </div>
         </div>
@@ -263,7 +265,7 @@ export default function ConversationDetailPage() {
             }}
           >
             <Star className={`mr-2 h-4 w-4 ${conversation.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-            {conversation.isFavorite ? 'Favorited' : 'Favorite'}
+            {conversation.isFavorite ? t('conversation-detail.favorited') : t('conversation-detail.favorite')}
           </Button>
           <Button onClick={handleExport} disabled={exporting} size="sm">
             {exporting ? (
@@ -271,7 +273,7 @@ export default function ConversationDetailPage() {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            Export Markdown
+            {t('conversation-detail.export-markdown')}
           </Button>
         </div>
       </div>
@@ -280,7 +282,7 @@ export default function ConversationDetailPage() {
       {(conversation.summary || conversation.keywords) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Summary</CardTitle>
+            <CardTitle className="text-lg">{t('conversation-detail.summary')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {conversation.summary && (
@@ -315,7 +317,7 @@ export default function ConversationDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Tag className="h-5 w-5" />
-            Tags
+            {t('conversation-detail.tags')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -328,20 +330,20 @@ export default function ConversationDetailPage() {
                     type="button"
                     onClick={() => handleRemoveTag(tag.id)}
                     className="ml-1 hover:text-destructive"
-                    title={`Remove tag: ${tag.name}`}
-                    aria-label={`Remove tag: ${tag.name}`}
+                    title={t('conversation-detail.remove-tag', { name: tag.name })}
+                    aria-label={t('conversation-detail.remove-tag', { name: tag.name })}
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">No tags added yet</p>
+              <p className="text-sm text-muted-foreground">{t('conversation-detail.no-tags')}</p>
             )}
           </div>
           <div className="flex gap-2">
             <Input
-              placeholder="Add a tag..."
+              placeholder={t('conversation-detail.add-tag-placeholder')}
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={(e) => {
@@ -371,11 +373,11 @@ export default function ConversationDetailPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Conversation</CardTitle>
+            <CardTitle className="text-lg">{t('conversation-detail.conversation')}</CardTitle>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{conversation.messages.filter(m => m.role === 'user').length} user</span>
+              <span>{t('conversation-detail.user-count', { count: conversation.messages.filter(m => m.role === 'user').length })}</span>
               <span>•</span>
-              <span>{conversation.messages.filter(m => m.role === 'assistant').length} assistant</span>
+              <span>{t('conversation-detail.assistant-count', { count: conversation.messages.filter(m => m.role === 'assistant').length })}</span>
             </div>
           </div>
         </CardHeader>
@@ -399,7 +401,7 @@ export default function ConversationDetailPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">
-                      {wordCount} words
+                      {wordCount} {t('conversation-detail.words')}
                     </span>
                     {message.createdAt && (
                       <span className="text-xs text-muted-foreground">
@@ -411,7 +413,7 @@ export default function ConversationDetailPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => handleCopy(message.content, message.id)}
-                      title="Copy message"
+                      title={t('conversation-detail.copy-message')}
                     >
                       {copiedId === message.id ? (
                         <Check className="h-3 w-3 text-green-500" />
@@ -442,7 +444,7 @@ export default function ConversationDetailPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-yellow-500" />
-              Extracted Prompts
+              {t('conversation-detail.extracted-prompts')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -491,7 +493,7 @@ export default function ConversationDetailPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Code className="h-5 w-5 text-blue-500" />
-              Code Snippets
+              {t('conversation-detail.code-snippets-title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -1,0 +1,15 @@
+{
+  "title": "Search",
+  "subtitle": "Search across all your conversations, prompts, and code",
+  "placeholder": "Search everything...",
+  "all": "All",
+  "search-your-data": "Search your data",
+  "search-hint": "Enter a keyword to search across conversations, prompts, code snippets, and projects.",
+  "no-results": "No results found",
+  "no-results-desc": "No matches found for \"{{query}}\". Try a different search term.",
+  "found-n-results": "Found {{count}} result(s)",
+  "conversation": "conversation",
+  "prompt": "prompt",
+  "code": "code",
+  "project": "project"
+}

@@ -1,0 +1,21 @@
+{
+  "title": "对话",
+  "subtitle-browse": "浏览和搜索你的 Claude 对话",
+  "selected-count": "已选择 {{count}} 条",
+  "delete-selected": "删除 ({{count}})",
+  "search-placeholder": "搜索对话...",
+  "newest": "最新",
+  "oldest": "最早",
+  "most-messages": "消息最多",
+  "favorites": "收藏",
+  "no-matching": "没有匹配的对话",
+  "no-conversations": "尚无对话",
+  "try-adjusting": "尝试调整搜索条件",
+  "import-first": "导入你的 Claude 对话历史以在此查看。",
+  "import-conversations": "导入对话",
+  "deselect-all": "取消全选",
+  "select-all": "全选",
+  "n-conversations": "{{count}} 条对话",
+  "msgs": "条消息",
+  "delete-confirm": "确定要删除 {{count}} 条对话吗？此操作不可撤销。"
+}

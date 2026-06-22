@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { validateClaudeExport, generateImportPreview } from '@/lib/importers/claude'
+import { useTranslation, useLocale } from '@/i18n/locale-context'
 
 interface PreviewData {
   conversationCount: number
@@ -24,6 +25,7 @@ interface ImportResult {
 
 export default function ImportPage() {
   const router = useRouter()
+  const { t, locale } = useTranslation()
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [importing, setImporting] = useState(false)
@@ -48,7 +50,7 @@ export default function ImportPage() {
         const validation = validateClaudeExport(data)
 
         if (!validation.valid) {
-          setError(validation.error || 'Invalid file format')
+          setError(validation.error || t('import.invalid-format'))
           return
         }
 
@@ -56,14 +58,14 @@ export default function ImportPage() {
         setPreview(previewData)
         setJsonData(data)
       } catch (err) {
-        setError('Failed to parse JSON file. Please ensure it\'s a valid JSON.')
+        setError(t('import.parse-failed'))
       }
     }
     reader.onerror = () => {
-      setError('Failed to read file')
+      setError(t('import.read-failed'))
     }
     reader.readAsText(selectedFile)
-  }, [])
+  }, [t])
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -90,12 +92,12 @@ export default function ImportPage() {
     const droppedFile = e.dataTransfer.files?.[0]
     if (droppedFile) {
       if (!droppedFile.name.endsWith('.json')) {
-        setError('Please upload a JSON file')
+        setError(t('import.json-only'))
         return
       }
       processFile(droppedFile)
     }
-  }, [processFile])
+  }, [processFile, t])
 
   const handleImport = async () => {
     if (!jsonData) return
@@ -120,7 +122,7 @@ export default function ImportPage() {
       const result = await response.json()
 
       if (result.errors && result.errors.length > 0) {
-        setError(`Imported with ${result.errors.length} error(s): ${result.errors.slice(0, 3).join(', ')}`)
+        setError(t('import.imported-with-errors', { count: result.errors.length, errors: result.errors.slice(0, 3).join(', ') }))
       }
 
       setImportResult({
@@ -157,15 +159,15 @@ export default function ImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Import</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('import.title')}</h2>
         <p className="text-muted-foreground">
-          Import your Claude conversation history
+          {t('import.subtitle')}
         </p>
       </div>
 
       {/* Step Indicator */}
       <div className="flex items-center gap-2 text-sm">
-        {['Select File', 'Preview', 'Import', 'Done'].map((step, i) => (
+        {[t('import.step-select'), t('import.step-preview'), t('import.step-import'), t('import.step-done')].map((step, i) => (
           <div key={step} className="flex items-center gap-2">
             <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
               i <= currentStep
@@ -184,9 +186,9 @@ export default function ImportPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Upload File</CardTitle>
+          <CardTitle>{t('import.upload-file')}</CardTitle>
           <CardDescription>
-            Upload your exported Claude conversations.json file
+            {t('import.upload-desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -211,13 +213,13 @@ export default function ImportPage() {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className={`w-10 h-10 mb-3 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
                   <p className="mb-2 text-sm text-muted-foreground">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">{t('import.click-to-upload')}</span> {t('import.drag-drop')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    conversations.json from Claude export
+                    {t('import.json-from-claude')}
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Supports multiple export formats
+                    {t('import.support-formats')}
                   </p>
                 </div>
                 <input
@@ -243,7 +245,7 @@ export default function ImportPage() {
               </div>
               <Button variant="ghost" size="sm" onClick={handleReset} className="flex-shrink-0">
                 <X className="h-4 w-4 mr-1" />
-                Change
+                {t('import.change')}
               </Button>
             </div>
           )}
@@ -253,7 +255,7 @@ export default function ImportPage() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 text-destructive border border-destructive/20">
               <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium">Import Error</p>
+                <p className="text-sm font-medium">{t('import.import-error')}</p>
                 <p className="text-xs mt-1 opacity-80">{error}</p>
               </div>
             </div>
@@ -262,29 +264,29 @@ export default function ImportPage() {
           {/* Preview */}
           {preview && !imported && (
             <div className="p-4 rounded-lg border space-y-4">
-              <h3 className="font-semibold text-lg">Preview</h3>
+              <h3 className="font-semibold text-lg">{t('import.preview-title')}</h3>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Conversations</p>
+                  <p className="text-xs text-muted-foreground">{t('import.conversations')}</p>
                   <p className="text-2xl font-bold">{preview.conversationCount.toLocaleString()}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Total Messages</p>
+                  <p className="text-xs text-muted-foreground">{t('import.total-messages')}</p>
                   <p className="text-2xl font-bold">{preview.totalMessages.toLocaleString()}</p>
                 </div>
                 {preview.dateRange && (
                   <>
                     <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">From</p>
+                      <p className="text-xs text-muted-foreground">{t('import.from')}</p>
                       <p className="text-sm font-medium">
-                        {preview.dateRange.start.toLocaleDateString()}
+                        {preview.dateRange.start.toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                       </p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">To</p>
+                      <p className="text-xs text-muted-foreground">{t('import.to')}</p>
                       <p className="text-sm font-medium">
-                        {preview.dateRange.end.toLocaleDateString()}
+                        {preview.dateRange.end.toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                       </p>
                     </div>
                   </>
@@ -293,7 +295,7 @@ export default function ImportPage() {
 
               {preview.sampleTitles.length > 0 && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Sample Titles</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('import.sample-titles')}</p>
                   <ul className="text-sm space-y-1.5">
                     {preview.sampleTitles.map((title, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -314,17 +316,17 @@ export default function ImportPage() {
                 {importing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing {preview.conversationCount} conversations...
+                    {t('import.importing-n-conversations', { count: preview.conversationCount })}
                   </>
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    Import {preview.conversationCount.toLocaleString()} Conversations
+                    {t('import.import-n-conversations', { count: preview.conversationCount.toLocaleString() })}
                   </>
                 )}
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                Duplicate conversations will be automatically skipped
+                {t('import.duplicates-skip')}
               </p>
             </div>
           )}
@@ -336,10 +338,10 @@ export default function ImportPage() {
                 <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">
-                    Import completed!
+                    {t('import.import-completed')}
                   </p>
                   <p className="text-xs mt-1 opacity-80">
-                    Redirecting to conversations...
+                    {t('import.redirecting')}
                   </p>
                 </div>
               </div>
@@ -347,15 +349,15 @@ export default function ImportPage() {
                 <div className="grid grid-cols-3 gap-3 p-4 rounded-lg border">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-600">{importResult.imported}</p>
-                    <p className="text-xs text-muted-foreground">Imported</p>
+                    <p className="text-xs text-muted-foreground">{t('import.imported')}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-yellow-600">{importResult.skipped}</p>
-                    <p className="text-xs text-muted-foreground">Skipped</p>
+                    <p className="text-xs text-muted-foreground">{t('import.skipped')}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-red-600">{importResult.errors.length}</p>
-                    <p className="text-xs text-muted-foreground">Errors</p>
+                    <p className="text-xs text-muted-foreground">{t('import.errors')}</p>
                   </div>
                 </div>
               )}
@@ -367,7 +369,7 @@ export default function ImportPage() {
       {/* Help Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">How to Export from Claude</CardTitle>
+          <CardTitle className="text-lg">{t('import.how-to-export')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="space-y-2 text-sm text-muted-foreground">
@@ -377,15 +379,15 @@ export default function ImportPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium text-foreground">2.</span>
-              <span>Click on &quot;Export Data&quot; in the account section</span>
+              <span>{t('import.export-step-2')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium text-foreground">3.</span>
-              <span>Download the exported ZIP file</span>
+              <span>{t('import.export-step-3')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium text-foreground">4.</span>
-              <span>Extract and upload the conversations.json file here</span>
+              <span>{t('import.export-step-4')}</span>
             </li>
           </ol>
         </CardContent>

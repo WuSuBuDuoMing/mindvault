@@ -1,0 +1,15 @@
+{
+  "title": "搜索",
+  "subtitle": "搜索所有对话、提示词和代码",
+  "placeholder": "搜索全部...",
+  "all": "全部",
+  "search-your-data": "搜索你的数据",
+  "search-hint": "输入关键词搜索对话、提示词、代码片段和项目。",
+  "no-results": "未找到结果",
+  "no-results-desc": "没有找到与 \"{{query}}\" 匹配的结果，请尝试其他搜索词。",
+  "found-n-results": "找到 {{count}} 条结果",
+  "conversation": "对话",
+  "prompt": "提示词",
+  "code": "代码",
+  "project": "项目"
+}

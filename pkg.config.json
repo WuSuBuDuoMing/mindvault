@@ -1,0 +1,25 @@
+{
+  "name": "mindvault",
+  "version": "1.0.0",
+  "description": "MindVault - Local-first knowledge base for Claude conversations",
+  "bin": "./electron-server.js",
+  "pkg": {
+    "assets": [
+      ".next/static/**/*",
+      ".next/server/**/*",
+      "public/**/*",
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/client/**/*",
+      "node_modules/.package-lock.json"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": ".",
+    "compress": "GZip"
+  },
+  "scripts": {
+    "build": "next build",
+    "package": "npx pkg . --target node18-win-x64 --output ./MindVault.exe --compress GZip"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "not-found-title": "Project Not Found",
+  "not-found-desc": "This project doesn't exist yet.",
+  "n-conversations": "{{count}} conversations",
+  "created": "Created",
+  "updated": "Updated",
+  "export-project": "Export Project",
+  "project-summary": "Project Summary",
+  "conversations-title": "Conversations",
+  "conversations-desc": "All conversations in this project",
+  "no-conversations": "No conversations in this project yet.",
+  "import-to-see": "Import conversations to see them here.",
+  "timeline": "Timeline",
+  "timeline-desc": "Activity timeline for this project",
+  "no-activity": "No activity yet",
+  "statistics": "Statistics",
+  "total-conversations": "Total Conversations",
+  "total-messages": "Total Messages",
+  "avg-messages-conv": "Avg Messages/Conv",
+  "category": "Category",
+  "created-label": "Created",
+  "last-updated": "Last Updated"
+}
