@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { getPaginationParams, createPaginationResult } from './pagination.ts'
+import { getPaginationParams, createPaginationResult } from './pagination'
 
 describe('getPaginationParams', () => {
   it('should return default values when no params provided', () => {

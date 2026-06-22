@@ -4,7 +4,7 @@ import {
   normalizeClaudeExport,
   validateClaudeExport,
   generateImportPreview,
-} from './claude.ts'
+} from './claude'
 
 describe('normalizeClaudeExport', () => {
   it('should parse array of conversations', () => {
