@@ -1,24 +1,29 @@
 # Changelog
 
-## v0.16.0 — Analyzer Improvements & Shared Utilities (2026-06-22)
+## v0.16.0 — PWA, i18n, Analyzer Fixes & Desktop Packaging (2026-06-23)
 
-### Changed — Code Analyzer
-- Added language auto-detection for JSX, PHP, Ruby, Swift, and Kotlin
-- Added language color mapping for newly detected languages (tsx, jsx, php, ruby, swift, kotlin)
-- Improved regex pattern for void pointer detection in C/C++ (`void *` vs `void*`)
+### PWA Support
+- Added `manifest.json` with app icons (192px, 512px SVG) and theme configuration
+- Added service worker (`sw.js`) with static asset caching and offline fallback
+- Added `ServiceWorkerRegistration` component for auto-registration on app load
 
-### Changed — Summary Analyzer
-- Refactored `extractKeywords` to reuse shared `STOP_WORDS` and `TECHNICAL_TERMS` from keywords module instead of maintaining duplicate sets
-- Eliminates ~30 lines of duplicated stop word lists and technical term sets across analyzers
+### Internationalization (i18n)
+- Added client-side locale system with `LocaleContext` provider (`src/i18n/`)
+- Supports `zh-CN` (default) and `en` locales with JSON translation files
+- Added `LocaleToggle` component in header for switching languages
+- All pages translated: dashboard, conversations, projects, prompts, code, search, settings, import, errors
 
-### Changed — Keywords Analyzer
-- Exported `STOP_WORDS` and `TECHNICAL_TERMS` as module-level constants for reuse by summary analyzer
-- Ensures consistent keyword filtering and technical term boosting across all analyzer modules
+### New Features
+- Added `/api/dashboard` route for statistics aggregation (conversations, prompts, code counts)
+- Added Electron server (`electron-server.js`) for desktop builds with `@yao-pkg/pkg`
+
+### Bug Fixes — Code Analyzer
+- Fixed language auto-detection: Python, Rust, Go, Kotlin, and Swift patterns now checked BEFORE generic JavaScript patterns to prevent false positives on shared keywords (`import`, `let`, `func`, `var`)
+- All 151 tests pass
 
 ### Testing
-- Added language auto-detection tests for TypeScript, Python, Rust, Go, and PHP
-- Added color mapping tests for newly supported languages
-- Total test count: 95+
+- Fixed CSV export test assertion for code snippets with embedded newlines
+- Full test suite: 151 tests, 38 suites, 0 failures
 
 ## v0.15.0 — CSV Export & Export Statistics (2026-06-22)
 
