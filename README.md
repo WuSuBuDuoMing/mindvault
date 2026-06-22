@@ -87,6 +87,76 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Platform-Specific Installation
+
+#### macOS
+
+```bash
+# Install Node.js via Homebrew
+brew install node
+
+# Clone and start
+git clone https://github.com/WuSuBuDuoMing/mindvault.git
+cd mindvault
+npm install
+npx prisma generate
+npx prisma db push
+npm run dev
+```
+
+#### Linux (Ubuntu/Debian)
+
+```bash
+# Install Node.js via package manager
+sudo apt update
+sudo apt install nodejs npm
+
+# Clone and start
+git clone https://github.com/WuSuBuDuoMing/mindvault.git
+cd mindvault
+npm install
+npx prisma generate
+npx prisma db push
+npm run dev
+```
+
+#### Windows
+
+1. Download and install [Node.js](https://nodejs.org/) (>= 18.0) from the official website.
+2. Open **PowerShell** or **Command Prompt**:
+
+```powershell
+git clone https://github.com/WuSuBuDuoMing/mindvault.git
+cd mindvault
+npm install
+npx prisma generate
+npx prisma db push
+npm run dev
+```
+
+#### Docker
+
+```bash
+# Build the image
+docker build -t mindvault .
+
+# Run the container
+docker run -d -p 3000:3000 --name mindvault mindvault
+```
+
+#### Docker Compose
+
+```bash
+# Start in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
 ### Importing Your Data
 
 1. Go to [claude.ai](https://claude.ai) > Settings > Export Data

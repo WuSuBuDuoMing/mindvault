@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  mindvault:
+    build: .
+    container_name: mindvault
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - mindvault-data:/app/prisma
+    restart: unless-stopped
+
+volumes:
+  mindvault-data:
