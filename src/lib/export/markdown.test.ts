@@ -10,6 +10,10 @@ import {
   exportConversationToHTML,
   exportPromptsToHTML,
   exportCodeSnippetsToHTML,
+  exportPromptsToCSV,
+  exportCodeSnippetsToCSV,
+  exportConversationsSummaryToCSV,
+  buildExportStatistics,
   generateExportFilename,
   exportConversation,
   exportPrompts,
@@ -368,6 +372,133 @@ describe('generateExportFilename', () => {
     const filename = generateExportFilename('Snippets', 'code-snippets', 'json')
     assert.ok(filename.startsWith('code-snippets-'))
     assert.ok(filename.endsWith('.json'))
+  })
+
+  it('should support CSV extension', () => {
+    const filename = generateExportFilename('Test', 'conversation', 'csv')
+    assert.ok(filename.endsWith('.csv'))
+  })
+})
+
+describe('exportPromptsToCSV', () => {
+  it('should produce valid CSV with header and data rows', () => {
+    const prompts = [
+      {
+        title: 'Code Reviewer',
+        content: 'You are a code reviewer...',
+        tags: 'coding, review',
+        isFavorite: true,
+        createdAt: new Date('2024-01-01'),
+        conversationTitle: 'My Chat',
+      },
+      {
+        title: 'Writer',
+        content: 'You are a writer...',
+        tags: 'writing',
+        isFavorite: false,
+        conversationTitle: 'Chat 2',
+      },
+    ]
+
+    const csv = exportPromptsToCSV(prompts)
+    const lines = csv.split('\n')
+    assert.strictEqual(lines.length, 3) // header + 2 data rows
+    assert.ok(lines[0].includes('Title'))
+    assert.ok(lines[0].includes('Content'))
+    assert.ok(lines[1].includes('Code Reviewer'))
+    assert.ok(lines[2].includes('Writer'))
+  })
+
+  it('should handle empty prompts array', () => {
+    const csv = exportPromptsToCSV([])
+    const lines = csv.split('\n')
+    assert.strictEqual(lines.length, 1) // header only
+  })
+
+  it('should escape commas in content', () => {
+    const prompts = [
+      {
+        title: 'Test',
+        content: 'hello, world',
+        isFavorite: false,
+      },
+    ]
+    const csv = exportPromptsToCSV(prompts)
+    assert.ok(csv.includes('"hello, world"'))
+  })
+})
+
+describe('exportCodeSnippetsToCSV', () => {
+  it('should produce valid CSV with code snippets', () => {
+    const snippets = [
+      {
+        language: 'typescript',
+        code: 'const x = 1\nconst y = 2',
+        description: 'Variables',
+        conversationTitle: 'Code Chat',
+      },
+    ]
+
+    const csv = exportCodeSnippetsToCSV(snippets)
+    const lines = csv.split('\n')
+    assert.strictEqual(lines.length, 2) // header + 1 data row
+    assert.ok(lines[0].includes('Language'))
+    assert.ok(lines[0].includes('Lines'))
+    assert.ok(lines[1].includes('typescript'))
+    assert.ok(lines[1].includes('2'))
+  })
+})
+
+describe('exportConversationsSummaryToCSV', () => {
+  it('should produce CSV summary of conversations', () => {
+    const conversations = [
+      {
+        title: 'Conv 1',
+        summary: 'Summary 1',
+        keywords: ['test', 'code'],
+        createdAt: new Date('2024-01-01'),
+        messages: [
+          { role: 'user', content: 'Hello' },
+          { role: 'assistant', content: 'Hi' },
+        ],
+        prompts: [{ content: 'prompt1', tags: '' }],
+      },
+    ]
+
+    const csv = exportConversationsSummaryToCSV(conversations)
+    const lines = csv.split('\n')
+    assert.strictEqual(lines.length, 2)
+    assert.ok(lines[0].includes('Title'))
+    assert.ok(lines[0].includes('Messages'))
+    assert.ok(lines[1].includes('Conv 1'))
+    assert.ok(lines[1].includes('2')) // message count
+  })
+})
+
+describe('buildExportStatistics', () => {
+  it('should build correct statistics', () => {
+    const content = 'Hello World'
+    const stats = buildExportStatistics(content, 'json', 'conversation', 5)
+
+    assert.strictEqual(stats.totalItems, 5)
+    assert.strictEqual(stats.format, 'json')
+    assert.strictEqual(stats.type, 'conversation')
+    assert.ok(stats.sizeBytes > 0)
+    assert.ok(stats.exportedAt instanceof Date)
+  })
+
+  it('should calculate correct byte size', () => {
+    const content = 'ABC'
+    const stats = buildExportStatistics(content, 'md', 'prompt', 1)
+    // 'ABC' is 3 bytes in UTF-8
+    assert.strictEqual(stats.sizeBytes, 3)
+  })
+
+  it('should handle Chinese content byte size', () => {
+    const content = '你好世界'
+    const stats = buildExportStatistics(content, 'md', 'conversation', 1)
+    // Each Chinese char is 3 bytes in UTF-8: 4 * 3 = 12
+    assert.strictEqual(stats.sizeBytes, 12)
   })
 })
 

@@ -6,8 +6,8 @@
  * Supports both English and Chinese keywords.
  */
 
-// Common stop words to filter out
-const STOP_WORDS = new Set([
+// Common stop words to filter out (shared with summary.ts via canonical list)
+export const STOP_WORDS = new Set([
   // English stop words
   'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
   'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
@@ -37,8 +37,8 @@ const STOP_WORDS = new Set([
   'claude', 'conversation', 'message', 'chat',
 ])
 
-// Technical terms that should be boosted
-const TECHNICAL_TERMS = new Set([
+// Technical terms that should be boosted (shared with summary.ts)
+export const TECHNICAL_TERMS = new Set([
   'api', 'css', 'sql', 'git', 'npm', 'tsx', 'jsx', 'vue', 'react',
   'node', 'next', 'prisma', 'tailwind', 'typescript', 'javascript',
   'python', 'rust', 'docker', 'kubernetes', 'aws', 'azure', 'gcp',

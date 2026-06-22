@@ -55,6 +55,63 @@ describe('extractCodeBlocks', () => {
   })
 })
 
+describe('language auto-detection', () => {
+  it('should detect TypeScript via type annotations', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: '```\nconst greeting: string = "hello";\nconst count: number = 42;\n```',
+      },
+    ]
+    const blocks = extractCodeBlocks(messages)
+    assert.strictEqual(blocks[0].language, 'typescript')
+  })
+
+  it('should detect Python patterns', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: '```\nimport os\nimport sys\ndef main():\n    print("hello")\n```',
+      },
+    ]
+    const blocks = extractCodeBlocks(messages)
+    assert.strictEqual(blocks[0].language, 'python')
+  })
+
+  it('should detect Rust patterns', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: '```\nfn main() {\n    let mut x = 5;\n    println!("{}", x);\n}\n```',
+      },
+    ]
+    const blocks = extractCodeBlocks(messages)
+    assert.strictEqual(blocks[0].language, 'rust')
+  })
+
+  it('should detect Go patterns', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: '```\npackage main\nimport "fmt"\nfunc main() {\n    fmt.Println("hello")\n}\n```',
+      },
+    ]
+    const blocks = extractCodeBlocks(messages)
+    assert.strictEqual(blocks[0].language, 'go')
+  })
+
+  it('should detect PHP patterns', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: '```php\n<?php\n$name = "world";\necho "Hello $name";\n?>\n```',
+      },
+    ]
+    const blocks = extractCodeBlocks(messages)
+    assert.strictEqual(blocks[0].language, 'php')
+  })
+})
+
 describe('getLanguageColor', () => {
   it('should return correct colors for known languages', () => {
     assert.strictEqual(getLanguageColor('typescript'), '#3178c6')
@@ -75,6 +132,15 @@ describe('getLanguageColor', () => {
     assert.strictEqual(getLanguageColor('sql'), '#e38c00')
     assert.strictEqual(getLanguageColor('bash'), '#4eaa25')
     assert.strictEqual(getLanguageColor('docker'), '#2496ed')
+  })
+
+  it('should return colors for newly added languages', () => {
+    assert.strictEqual(getLanguageColor('php'), '#4F5D95')
+    assert.strictEqual(getLanguageColor('ruby'), '#CC342D')
+    assert.strictEqual(getLanguageColor('tsx'), '#3178c6')
+    assert.strictEqual(getLanguageColor('jsx'), '#f7df1e')
+    assert.strictEqual(getLanguageColor('swift'), '#F05138')
+    assert.strictEqual(getLanguageColor('kotlin'), '#A97BFF')
   })
 
   it('should return default color for empty string', () => {

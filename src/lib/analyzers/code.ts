@@ -222,6 +222,11 @@ function detectLanguage(code: string): string | null {
     return 'typescript'
   }
 
+  // JSX/TSX patterns
+  if (/<[A-Z][a-zA-Z]*[\s/>]/.test(code) && /\b(import|export|from|return)\b/.test(code)) {
+    return 'tsx'
+  }
+
   // JavaScript/TypeScript patterns
   if (/\b(const|let|var|function|=>|import|export|require|module\.exports)\b/.test(code)) {
     return 'javascript'
@@ -239,7 +244,7 @@ function detectLanguage(code: string): string | null {
   }
 
   // C/C++ patterns
-  if (/\b(#include|printf|scanf|malloc|free|struct|typedef|void\s+\*?)\b/.test(code)) {
+  if (/\b(#include|printf|scanf|malloc|free|struct|typedef|void\s*\*?)\b/.test(code)) {
     return 'c'
   }
 
@@ -257,6 +262,26 @@ function detectLanguage(code: string): string | null {
   // Go patterns
   if (/\b(func |package |import |fmt\.|:=|goroutine|chan )\b/.test(code)) {
     return 'go'
+  }
+
+  // PHP patterns
+  if (/\b(\$\w+\s*=|echo |function\s+\w+\s*\(|<\?php|\->|::class)\b/.test(code)) {
+    return 'php'
+  }
+
+  // Ruby patterns
+  if (/\b(def |end\b|do\b|puts |require |attr_|\.each\b|\.map\b)\b/.test(code) && /\bend\b/.test(code)) {
+    return 'ruby'
+  }
+
+  // Swift patterns
+  if (/\b(var |let |func |guard |if let|struct |class |protocol |import UIKit)\b/.test(code)) {
+    return 'swift'
+  }
+
+  // Kotlin patterns
+  if (/\b(fun |val |var |when\b|suspend |data class|companion object)\b/.test(code)) {
+    return 'kotlin'
   }
 
   // HTML patterns
@@ -398,6 +423,8 @@ export function getLanguageColor(language: string | null): string {
     solidity: '#363636',
     toml: '#9c4221',
     powershell: '#012456',
+    tsx: '#3178c6',
+    jsx: '#f7df1e',
   }
 
   return colors[language || ''] || '#6b7280'

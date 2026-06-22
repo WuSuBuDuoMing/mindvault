@@ -2,8 +2,8 @@
  * Multi-Format Export
  *
  * Export conversations, projects, prompts, and code snippets in
- * Markdown, JSON, and plain-text (PDF-ready HTML) formats.
- * Enhanced with bulk export utilities and format selection helpers.
+ * Markdown, JSON, CSV, and plain-text (PDF-ready HTML) formats.
+ * Enhanced with bulk export utilities, format selection helpers, and export statistics.
  */
 
 /**
@@ -67,7 +67,7 @@ export interface CodeSnippetExportData {
 /**
  * Supported export format types.
  */
-export type ExportFormat = 'md' | 'json' | 'html'
+export type ExportFormat = 'md' | 'json' | 'html' | 'csv'
 
 /**
  * Supported content types for export.
@@ -92,7 +92,7 @@ export interface ExportResult {
  * Export a conversation in the specified format, returning a structured result.
  *
  * @param data - The conversation data to export
- * @param format - The export format (md, json, html)
+ * @param format - The export format (md, json, html, csv)
  * @returns An {@link ExportResult} with content, format, and filename
  */
 export function exportConversation(
@@ -117,7 +117,7 @@ export function exportConversation(
  * Export prompts in the specified format.
  *
  * @param prompts - The prompt data to export
- * @param format - The export format (md, json, html)
+ * @param format - The export format (md, json, html, csv)
  * @returns An {@link ExportResult} with content, format, and filename
  */
 export function exportPrompts(
@@ -158,7 +158,7 @@ export function exportPrompts(
  * Export code snippets in the specified format.
  *
  * @param snippets - The code snippet data to export
- * @param format - The export format (md, json, html)
+ * @param format - The export format (md, json, html, csv)
  * @returns An {@link ExportResult} with content, format, and filename
  */
 export function exportCodeSnippets(
@@ -191,6 +191,22 @@ export function exportCodeSnippets(
     contentType: 'code-snippets',
     filename: generateExportFilename('code-snippets', 'code-snippets', format),
   }
+}
+
+/**
+ * Statistics about a completed export operation.
+ */
+export interface ExportStatistics {
+  /** Total number of items exported */
+  totalItems: number
+  /** Total size of exported content in bytes */
+  sizeBytes: number
+  /** The export format used */
+  format: 'md' | 'json' | 'html' | 'csv'
+  /** The content type exported */
+  type: string
+  /** When the export was generated */
+  exportedAt: Date
 }
 
 // ─── Markdown Export ─────────────────────────────────────────────────────────
@@ -568,6 +584,98 @@ export function exportCodeSnippetsToHTML(snippets: CodeSnippetExportData[]): str
   return parts.join('\n')
 }
 
+// ─── CSV Export ──────────────────────────────────────────────────────────────
+
+/**
+ * Escape a value for CSV output (wraps in quotes if it contains commas, quotes, or newlines).
+ */
+function csvEscape(value: string | null | undefined): string {
+  if (value === null || value === undefined) return ''
+  const str = String(value)
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
+/**
+ * Export prompts as a CSV string with headers.
+ */
+export function exportPromptsToCSV(prompts: PromptExportData[]): string {
+  const header = ['Title', 'Content', 'Tags', 'Favorite', 'From', 'Created']
+  const rows = prompts.map((p) => [
+    csvEscape(p.title || 'Untitled'),
+    csvEscape(p.content),
+    csvEscape(p.tags || ''),
+    p.isFavorite ? 'Yes' : 'No',
+    csvEscape(p.conversationTitle || ''),
+    p.createdAt ? p.createdAt.toISOString() : '',
+  ])
+
+  return [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+}
+
+/**
+ * Export code snippets as a CSV string with headers.
+ */
+export function exportCodeSnippetsToCSV(snippets: CodeSnippetExportData[]): string {
+  const header = ['Language', 'Description', 'Lines', 'Code', 'From', 'Created']
+  const rows = snippets.map((s) => [
+    csvEscape(s.language || 'Unknown'),
+    csvEscape(s.description || ''),
+    String(s.code.split('\n').length),
+    csvEscape(s.code),
+    csvEscape(s.conversationTitle || ''),
+    s.createdAt ? s.createdAt.toISOString() : '',
+  ])
+
+  return [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+}
+
+/**
+ * Export conversations summary as a CSV string (not full messages — for overview).
+ */
+export function exportConversationsSummaryToCSV(conversations: ConversationExportData[]): string {
+  const header = ['Title', 'Summary', 'Keywords', 'Messages', 'Prompts', 'Code Snippets', 'Created']
+  const rows = conversations.map((c) => [
+    csvEscape(c.title),
+    csvEscape(c.summary || ''),
+    csvEscape((c.keywords || []).join('; ')),
+    String(c.messages.length),
+    String(c.prompts?.length || 0),
+    String(c.codeSnippets?.length || 0),
+    c.createdAt.toISOString(),
+  ])
+
+  return [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+}
+
+// ─── Export Statistics ───────────────────────────────────────────────────────
+
+/**
+ * Build export statistics from the exported content.
+ *
+ * @param content - The raw exported string
+ * @param format - The export format
+ * @param type - The content type
+ * @param totalItems - Number of items exported
+ * @returns An {@link ExportStatistics} object
+ */
+export function buildExportStatistics(
+  content: string,
+  format: ExportStatistics['format'],
+  type: string,
+  totalItems: number
+): ExportStatistics {
+  return {
+    totalItems,
+    sizeBytes: new TextEncoder().encode(content).length,
+    format,
+    type,
+    exportedAt: new Date(),
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getRoleLabel(role: string): string {
@@ -615,7 +723,7 @@ function escapeHTML(str: string): string {
 export function generateExportFilename(
   title: string,
   type: 'conversation' | 'project' | 'prompts' | 'code-snippets',
-  ext: 'md' | 'json' | 'html' = 'md'
+  ext: 'md' | 'json' | 'html' | 'csv' = 'md'
 ): string {
   const sanitized = title
     .replace(/[^a-zA-Z0-9\s-]/g, '')

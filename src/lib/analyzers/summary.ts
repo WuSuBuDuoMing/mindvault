@@ -7,6 +7,8 @@
  * Enhanced with additional conversation types and improved topic extraction.
  */
 
+import { STOP_WORDS, TECHNICAL_TERMS } from './keywords'
+
 /**
  * Result of analyzing a conversation's summary and keywords.
  */
@@ -237,6 +239,7 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
 
 /**
  * Extract top keywords from an array of message content strings.
+ * Reuses the canonical stop words and technical terms from the keywords module.
  *
  * @param messages - Concatenated message content strings
  * @returns Top 10 keywords sorted by frequency, with technical terms boosted
@@ -244,41 +247,14 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
 export function extractKeywords(messages: string[]): string[] {
   const allText = messages.join(' ').toLowerCase()
 
-  // Common stop words
-  const stopWords = new Set([
-    'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
-    'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
-    'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her',
-    'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there',
-    'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get',
-    'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no',
-    'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your',
-    'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then',
-    'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
-    'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first',
-    'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these',
-    'give', 'day', 'most', 'us', 'is', 'am', 'are', 'was', 'were',
-    'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does',
-    'did', 'doing', 'done', 'should', 'would', 'could', 'might',
-    'must', 'shall', 'can', 'need', 'dare', 'ought', 'used',
-    'here', 'where', 'each', 'every', 'both', 'few', 'more',
-    'very', 'too', 'before', 'between', 'under', 'above',
-    'still', 'own', 'same', 'while', 'through', 'during',
-    'don', 'doesn', 'didn', 'won', 'wouldn', 'couldn', 'shouldn',
-    // Common low-value words
-    'using', 'used', 'want', 'need', 'help', 'please', 'thanks',
-    'sure', 'yes', 'okay', 'ok', 'right', 'let', 'think',
-  ])
-
   // Extract technical terms and meaningful words (3+ chars)
   const words = allText.match(/[a-z][a-z0-9]{2,}/g) || []
   const wordCount = new Map<string, number>()
 
   for (const word of words) {
-    if (!stopWords.has(word) && word.length >= 3) {
+    if (!STOP_WORDS.has(word) && word.length >= 3) {
       // Boost technical terms
-      const isTechnical = /^[a-z]+[A-Z]|[-_]|\d/.test(word) ||
-        ['api', 'css', 'sql', 'git', 'npm', 'tsx', 'jsx', 'vue', 'react', 'node'].includes(word)
+      const isTechnical = /^[a-z]+[A-Z]|[-_]|\d/.test(word) || TECHNICAL_TERMS.has(word)
 
       const weight = isTechnical ? 2 : 1
       wordCount.set(word, (wordCount.get(word) || 0) + weight)

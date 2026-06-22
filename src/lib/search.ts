@@ -3,7 +3,7 @@
  *
  * Full-text search across conversations, prompts, and code snippets.
  * Supports fuzzy matching, tag filtering, time range filtering,
- * query highlighting, and result caching.
+ * search result highlighting with statistics, and result caching.
  * Uses SQLite LIKE for MVP, can be upgraded to FTS5 later.
  */
 
@@ -49,6 +49,73 @@ export interface SearchOptions {
   fuzzy?: boolean
   /** Return detailed results with matched field info (default false) */
   detailed?: boolean
+  /** Highlight matched terms in results (default true) */
+  highlight?: boolean
+}
+
+/**
+ * Aggregated statistics about a set of search results.
+ */
+export interface SearchStatistics {
+  /** Total number of results across all types */
+  totalResults: number
+  /** Breakdown of results by content type */
+  byType: Record<string, number>
+  /** The average relevance score of returned results */
+  averageRelevance: number
+  /** Time taken for the search in milliseconds */
+  durationMs: number
+}
+
+/**
+ * Response envelope for search results with metadata.
+ */
+export interface SearchResponse {
+  /** The matched results sorted by relevance */
+  results: SearchResult[]
+  /** Aggregated statistics about the results */
+  statistics: SearchStatistics
+}
+
+/**
+ * In-memory cache for recent searches to avoid redundant DB queries.
+ * Simple LRU-like cache with TTL expiry (5 minutes).
+ */
+const searchCache = new Map<string, { data: SearchResponse; timestamp: number }>()
+const CACHE_TTL_MS = 5 * 60 * 1000
+const MAX_CACHE_SIZE = 50
+
+/**
+ * Build a cache key from search parameters.
+ */
+function buildCacheKey(query: string, options: SearchOptions): string {
+  const { types, tags, dateFrom, dateTo, limit, fuzzy } = options
+  return JSON.stringify({
+    q: query.trim().toLowerCase(),
+    types: types?.sort(),
+    tags: tags?.sort(),
+    dateFrom: dateFrom?.toISOString(),
+    dateTo: dateTo?.toISOString(),
+    limit,
+    fuzzy,
+  })
+}
+
+/**
+ * Evict expired entries and enforce the max cache size.
+ */
+function evictCache(): void {
+  const now = Date.now()
+  for (const [key, entry] of searchCache) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      searchCache.delete(key)
+    }
+  }
+  // Enforce max size by removing oldest entries
+  while (searchCache.size > MAX_CACHE_SIZE) {
+    const oldest = searchCache.keys().next().value
+    if (oldest !== undefined) searchCache.delete(oldest)
+  }
 }
 
 /**
@@ -85,7 +152,7 @@ export function buildFuzzyRegex(query: string): RegExp {
  * @param fuzzyRegex - The compiled fuzzy regex
  * @returns Match quality score (0 = no match, 1 = perfect)
  */
-function fuzzyMatchScore(text: string, fuzzyRegex: RegExp): number {
+export function fuzzyMatchScore(text: string, fuzzyRegex: RegExp): number {
   const match = text.match(fuzzyRegex)
   if (!match) return 0
   // Score based on how close the match length is to the query length
@@ -97,17 +164,28 @@ function fuzzyMatchScore(text: string, fuzzyRegex: RegExp): number {
 
 /**
  * Search across all content types (conversations, prompts, code snippets, projects)
- * with support for fuzzy matching, tag filtering, and date range filtering.
+ * with support for fuzzy matching, tag filtering, date range filtering, and result caching.
  * Requires a query of at least 2 characters. Results are sorted by relevance score.
  *
  * @param query - Search string (minimum 2 characters)
- * @param options - Optional filters for types, tags, dates, fuzzy, and detailed mode
- * @returns Array of {@link SearchResult} (or {@link DetailedSearchResult}) sorted by relevance descending
+ * @param options - Optional filters for types, tags, dates, fuzzy, detailed mode, and caching
+ * @returns A {@link SearchResponse} with results and aggregated statistics
  */
-export async function searchAll(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
+export async function searchAll(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
   if (!query || query.trim().length < 2) {
-    return []
+    return {
+      results: [],
+      statistics: buildStatistics([], 0),
+    }
   }
+
+  const cacheKey = buildCacheKey(query, options)
+  const cached = searchCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data
+  }
+
+  const startTime = Date.now()
 
   const {
     types,
@@ -367,7 +445,16 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
   // Sort by relevance
   results.sort((a, b) => b.relevance - a.relevance)
 
-  return results
+  const durationMs = Date.now() - startTime
+  const statistics = buildStatistics(results, durationMs)
+
+  const response: SearchResponse = { results, statistics }
+
+  // Cache the result
+  searchCache.set(cacheKey, { data: response, timestamp: Date.now() })
+  evictCache()
+
+  return response
 }
 
 /**
@@ -437,12 +524,13 @@ export function highlightQuery(text: string, query: string): string {
 
 /**
  * Extract a text snippet around the query match for display in search results.
+ * Returns a substring of up to 100 chars centered on the match, with ellipsis.
  *
  * @param content - The full content to search within
  * @param query - The search query to locate
  * @returns A substring of up to 120 chars centered on the match, with ellipsis
  */
-function extractHighlight(content: string, query: string): string {
+export function extractHighlight(content: string, query: string): string {
   if (!content) return ''
 
   const lowerContent = content.toLowerCase()
@@ -466,6 +554,30 @@ function extractHighlight(content: string, query: string): string {
 }
 
 /**
+ * Build aggregated statistics from a set of search results.
+ *
+ * @param results - Array of search results
+ * @param durationMs - Time taken for the search in milliseconds
+ * @returns Aggregated {@link SearchStatistics}
+ */
+export function buildStatistics(results: SearchResult[], durationMs: number): SearchStatistics {
+  const byType: Record<string, number> = {}
+  let totalRelevance = 0
+
+  for (const result of results) {
+    byType[result.type] = (byType[result.type] || 0) + 1
+    totalRelevance += result.relevance
+  }
+
+  return {
+    totalResults: results.length,
+    byType,
+    averageRelevance: results.length > 0 ? Math.round(totalRelevance / results.length) : 0,
+    durationMs,
+  }
+}
+
+/**
  * Calculate a relevance score for a search result based on title and content match quality.
  * Title matches score higher (up to 100 points) than content matches (up to 60 points).
  *
@@ -474,7 +586,7 @@ function extractHighlight(content: string, query: string): string {
  * @param query - The search query
  * @returns Numeric relevance score (higher is more relevant)
  */
-function calculateRelevance(title: string | null, content: string | null, query: string): number {
+export function calculateRelevance(title: string | null, content: string | null, query: string): number {
   let score = 0
   const lowerQuery = query.toLowerCase()
 
@@ -497,7 +609,7 @@ function calculateRelevance(title: string | null, content: string | null, query:
       score += 40
 
       // Boost for exact word match
-      const wordRegex = new RegExp(`\\b${lowerQuery}\\b`, 'i')
+      const wordRegex = new RegExp(`\\b${escapeRegExp(lowerQuery)}\\b`, 'i')
       if (wordRegex.test(content)) {
         score += 20
       }
@@ -505,4 +617,18 @@ function calculateRelevance(title: string | null, content: string | null, query:
   }
 
   return score
+}
+
+/**
+ * Escape special regex characters in a string.
+ */
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Clear the search result cache (useful for testing or after data mutations).
+ */
+export function clearSearchCache(): void {
+  searchCache.clear()
 }

@@ -52,8 +52,8 @@ export async function GET(request: Request) {
       options.fuzzy = true
     }
 
-    const results = await searchAll(query, options)
-    return NextResponse.json(results)
+    const response = await searchAll(query, options)
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Search error:', error)
     return NextResponse.json(
