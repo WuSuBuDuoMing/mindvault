@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { extractCodeBlocks, getLanguageColor } from './code.ts'
+import { extractCodeBlocks, getLanguageColor } from './code'
 
 describe('extractCodeBlocks', () => {
   it('should extract markdown code blocks with language', () => {

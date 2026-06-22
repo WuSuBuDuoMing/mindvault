@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { classifyConversation, generateProjectSummary, extractKeyProgress, extractTodos } from './projects.ts'
+import { classifyConversation, generateProjectSummary, extractKeyProgress, extractTodos } from './projects'
 
 describe('classifyConversation', () => {
   it('should classify code-related conversation', () => {

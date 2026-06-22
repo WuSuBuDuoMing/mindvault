@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { ApiError } from './api-utils.ts'
+import { ApiError } from './api-utils'
 
 describe('ApiError', () => {
   it('should create error with message and status code', () => {

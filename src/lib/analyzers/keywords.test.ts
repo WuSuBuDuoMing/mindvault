@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { extractKeywords, extractKeywordsFromMessages, parseKeywords, formatKeywords } from './keywords.ts'
+import { extractKeywords, extractKeywordsFromMessages, parseKeywords, formatKeywords } from './keywords'
 
 describe('extractKeywords', () => {
   it('should extract English keywords by frequency', () => {

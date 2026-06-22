@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { extractPrompts } from './prompts.ts'
+import { extractPrompts } from './prompts'
 
 describe('extractPrompts', () => {
   it('should extract prompt-like messages', () => {

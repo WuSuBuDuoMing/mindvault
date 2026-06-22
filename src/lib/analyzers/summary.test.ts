@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { generateSummary, extractKeywords } from './summary.ts'
+import { generateSummary, extractKeywords } from './summary'
 
 describe('generateSummary', () => {
   it('should generate summary from user and assistant messages', () => {

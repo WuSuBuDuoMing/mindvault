@@ -11,7 +11,7 @@ import {
   exportPromptsToHTML,
   exportCodeSnippetsToHTML,
   generateExportFilename,
-} from './markdown.ts'
+} from './markdown'
 
 describe('exportConversationToMarkdown', () => {
   it('should render title and metadata', () => {
