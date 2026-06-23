@@ -157,7 +157,7 @@ function normalizeLanguage(lang: string | null): string | null {
     ps: 'powershell',
     pwsh: 'powershell',
     dockerfile: 'docker',
-    docker-compose: 'docker',
+    'docker-compose': 'docker',
     tf: 'terraform',
     hcl: 'terraform',
     prisma: 'prisma',
