@@ -87,7 +87,7 @@ describe('buildFuzzyRegex', () => {
 describe('highlightQuery', () => {
   it('should wrap matching text with <mark> tags', () => {
     const result = highlightQuery('Hello World', 'world')
-    assert.strictEqual(result, 'Hello <mark>world</mark>')
+    assert.strictEqual(result, 'Hello <mark>World</mark>')
   })
 
   it('should be case insensitive', () => {
