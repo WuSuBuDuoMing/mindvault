@@ -3,6 +3,7 @@
  *
  * Auto-categorizes conversations into projects based on content.
  * Uses keyword matching for MVP, can be extended with AI.
+ * Enhanced with additional categories and scoring heuristics.
  */
 
 /**
@@ -15,6 +16,18 @@ export interface ProjectCategory {
   category: string
   /** Human-readable description of the category scope. */
   description: string
+}
+
+/**
+ * Classification result with category and confidence metadata.
+ */
+export interface ClassificationResult {
+  /** The matched project category. */
+  category: ProjectCategory
+  /** Numeric confidence score based on keyword match strength. */
+  confidence: number
+  /** Breakdown of scores per category for debugging/analytics. */
+  scores: Record<string, number>
 }
 
 // Predefined project categories with keywords
@@ -58,6 +71,21 @@ const PROJECT_CATEGORIES: ProjectCategory[] = [
     name: 'Design',
     category: 'design',
     description: 'UI/UX design, graphics, and visual content',
+  },
+  {
+    name: 'DevOps & Infrastructure',
+    category: 'devops',
+    description: 'Deployment, CI/CD, cloud infrastructure, and operations',
+  },
+  {
+    name: 'Security',
+    category: 'security',
+    description: 'Security analysis, vulnerability assessment, and hardening',
+  },
+  {
+    name: 'Translation & Localization',
+    category: 'translation',
+    description: 'Translation, localization, and multilingual content',
   },
 ]
 
@@ -115,6 +143,24 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'color', 'icon', 'illustration', 'graphic',
     '设计', '界面', '原型',
   ],
+  devops: [
+    'deploy', 'deployment', 'ci/cd', 'pipeline', 'infrastructure',
+    'server', 'hosting', 'nginx', 'container', 'orchestrat',
+    'terraform', 'ansible', 'aws', 'azure', 'gcp', 'kubernetes',
+    'docker', 'helm', 'monitoring', 'logging', 'alerting',
+    '部署', '运维', '服务器', '容器', '监控',
+  ],
+  security: [
+    'security', 'vulnerability', 'encryption', 'authentication',
+    'authorization', 'xss', 'csrf', 'injection', 'firewall',
+    'penetration', 'audit', 'compliance', 'ssl', 'tls',
+    '安全', '漏洞', '加密', '认证', '审计',
+  ],
+  translation: [
+    'translate', 'translation', 'interpret', 'localize', 'localization',
+    'i18n', 'l10n', 'bilingual', 'multilingual',
+    '翻译', '译文', '本地化', '双语',
+  ],
 }
 
 /**
@@ -129,6 +175,22 @@ export function classifyConversation(
   title: string,
   messages: { role: string; content: string }[]
 ): ProjectCategory {
+  const result = classifyConversationDetailed(title, messages)
+  return result.category
+}
+
+/**
+ * Classify a conversation with detailed scoring metadata.
+ * Returns the best-matching category along with confidence and per-category scores.
+ *
+ * @param title - Conversation title
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns A {@link ClassificationResult} with category, confidence, and score breakdown
+ */
+export function classifyConversationDetailed(
+  title: string,
+  messages: { role: string; content: string }[]
+): ClassificationResult {
   const allContent = [
     title,
     ...messages.map(m => m.content),
@@ -163,19 +225,27 @@ export function classifyConversation(
   // If no strong match, return "Uncategorized"
   if (bestScore < 2) {
     return {
-      name: 'Uncategorized',
-      category: 'other',
-      description: 'Conversations that don\'t fit other categories',
+      category: {
+        name: 'Uncategorized',
+        category: 'other',
+        description: 'Conversations that don\'t fit other categories',
+      },
+      confidence: 0,
+      scores,
     }
   }
 
   // Find the matching predefined category
   const matchedCategory = PROJECT_CATEGORIES.find(c => c.category === bestCategory)
 
-  return matchedCategory || {
-    name: 'Other',
-    category: 'other',
-    description: 'Other conversations',
+  return {
+    category: matchedCategory || {
+      name: 'Other',
+      category: 'other',
+      description: 'Other conversations',
+    },
+    confidence: Math.min(1, bestScore / 10),
+    scores,
   }
 }
 

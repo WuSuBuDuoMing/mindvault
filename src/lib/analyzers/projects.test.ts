@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { classifyConversation, generateProjectSummary, extractKeyProgress, extractTodos } from './projects'
+import { classifyConversation, classifyConversationDetailed, generateProjectSummary, extractKeyProgress, extractTodos } from './projects'
 
 describe('classifyConversation', () => {
   it('should classify code-related conversation', () => {
@@ -65,6 +65,57 @@ describe('classifyConversation', () => {
     ]
     const result = classifyConversation('UI Design', messages)
     assert.strictEqual(result.category, 'design')
+  })
+
+  it('should classify DevOps conversation', () => {
+    const messages = [
+      { role: 'user', content: 'Help me set up a CI/CD pipeline with Docker container deployment on AWS infrastructure.' },
+      { role: 'assistant', content: 'Let me help you configure the deployment pipeline with Kubernetes orchestration.' },
+    ]
+    const result = classifyConversation('DevOps Setup', messages)
+    assert.strictEqual(result.category, 'devops')
+  })
+
+  it('should classify security conversation', () => {
+    const messages = [
+      { role: 'user', content: 'Please perform a security audit of the authentication system and check for vulnerability issues.' },
+      { role: 'assistant', content: 'I will analyze the encryption and firewall configuration for compliance.' },
+    ]
+    const result = classifyConversation('Security Review', messages)
+    assert.strictEqual(result.category, 'security')
+  })
+
+  it('should classify translation conversation', () => {
+    const messages = [
+      { role: 'user', content: 'Please translate this technical documentation from English to Chinese. We need localization for the i18n system.' },
+      { role: 'assistant', content: 'Here is the translated and localized version of the documentation.' },
+    ]
+    const result = classifyConversation('Translation Work', messages)
+    assert.strictEqual(result.category, 'translation')
+  })
+})
+
+describe('classifyConversationDetailed', () => {
+  it('should return category with confidence and scores', () => {
+    const messages = [
+      { role: 'user', content: 'How do I implement a React component with TypeScript and API endpoints?' },
+      { role: 'assistant', content: 'You can create a function component that calls the API endpoint using fetch.' },
+    ]
+    const result = classifyConversationDetailed('Building a React app', messages)
+    assert.strictEqual(result.category.category, 'code')
+    assert.ok(result.confidence > 0)
+    assert.ok(typeof result.scores === 'object')
+    assert.ok(result.scores['code'] > 0)
+  })
+
+  it('should return zero confidence for uncategorized', () => {
+    const messages = [
+      { role: 'user', content: 'Hello, how are you?' },
+      { role: 'assistant', content: 'I am doing well, thank you!' },
+    ]
+    const result = classifyConversationDetailed('Random chat', messages)
+    assert.strictEqual(result.category.category, 'other')
+    assert.strictEqual(result.confidence, 0)
   })
 })
 

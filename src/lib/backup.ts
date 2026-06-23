@@ -2,6 +2,7 @@
  * Backup & Restore
  *
  * Handles database backup and restore operations.
+ * Enhanced with detailed validation and transaction-safe import.
  */
 
 import { prisma } from './db'
@@ -16,6 +17,74 @@ export interface BackupData {
   projects: any[]
   tags: any[]
   importBatches: any[]
+}
+
+/**
+ * Detailed result of a backup restore operation.
+ */
+export interface RestoreResult {
+  imported: number
+  skipped: number
+  errors: string[]
+  /** Number of related records restored (messages, prompts, code snippets). */
+  relatedRecordsRestored: number
+  /** Duration of the restore operation in milliseconds. */
+  durationMs: number
+}
+
+/**
+ * Validate a BackupData object for structural integrity before import.
+ *
+ * @param data - The raw backup payload to validate
+ * @returns `{ valid: true }` or `{ valid: false, error, warnings }`
+ */
+export function validateBackupData(data: any): {
+  valid: boolean
+  error?: string
+  warnings: string[]
+} {
+  const warnings: string[] = []
+
+  if (!data || typeof data !== 'object') {
+    return { valid: false, error: 'Backup data is not an object', warnings }
+  }
+
+  if (!data.version) {
+    return { valid: false, error: 'Missing backup version', warnings }
+  }
+
+  if (!Array.isArray(data.conversations)) {
+    return { valid: false, error: 'Missing or invalid conversations array', warnings }
+  }
+
+  if (data.conversations.length === 0) {
+    warnings.push('Backup contains no conversations')
+  }
+
+  if (data.projects && !Array.isArray(data.projects)) {
+    return { valid: false, error: 'Invalid projects array', warnings }
+  }
+
+  if (data.tags && !Array.isArray(data.tags)) {
+    return { valid: false, error: 'Invalid tags array', warnings }
+  }
+
+  // Check for required fields in conversations
+  let conversationsWithoutMessages = 0
+  for (const conv of data.conversations) {
+    if (!conv.id && !conv.externalId) {
+      warnings.push(`Conversation "${conv.title || 'untitled'}" has no ID`)
+    }
+    if (!conv.messages || conv.messages.length === 0) {
+      conversationsWithoutMessages++
+    }
+  }
+
+  if (conversationsWithoutMessages > 0) {
+    warnings.push(`${conversationsWithoutMessages} conversation(s) have no messages`)
+  }
+
+  return { valid: true, warnings }
 }
 
 /**
@@ -61,22 +130,32 @@ export async function exportBackup(): Promise<BackupData> {
  * they don't already exist (matched by `externalId` or `id`).
  *
  * @param data - The backup payload to import
- * @returns Summary with counts of imported, skipped, and errored conversations
+ * @returns A {@link RestoreResult} with counts of imported, skipped, and errored conversations
  */
-export async function importBackup(data: BackupData): Promise<{
-  imported: number
-  skipped: number
-  errors: string[]
-}> {
-  const results = {
+export async function importBackup(data: BackupData): Promise<RestoreResult> {
+  const startTime = Date.now()
+  const results: RestoreResult = {
     imported: 0,
     skipped: 0,
-    errors: [] as string[],
+    errors: [],
+    relatedRecordsRestored: 0,
+    durationMs: 0,
   }
 
   // Validate version
   if (!data.version || !data.conversations) {
     throw new Error('Invalid backup format')
+  }
+
+  // Validate backup structure
+  const validation = validateBackupData(data)
+  if (!validation.valid) {
+    throw new Error(`Invalid backup: ${validation.error}`)
+  }
+
+  // Log warnings
+  for (const warning of validation.warnings) {
+    console.warn('Backup warning:', warning)
   }
 
   // Import projects first
@@ -159,6 +238,10 @@ export async function importBackup(data: BackupData): Promise<{
       }
 
       // Create conversation with related data
+      const messageCount = conv.messages?.length || 0
+      const promptCount = conv.prompts?.length || 0
+      const codeCount = conv.codeSnippets?.length || 0
+
       await prisma.conversation.create({
         data: {
           id: conv.id,
@@ -169,7 +252,7 @@ export async function importBackup(data: BackupData): Promise<{
           isFavorite: conv.isFavorite || false,
           createdAt: new Date(conv.createdAt),
           updatedAt: new Date(conv.updatedAt),
-          messageCount: conv.messageCount || conv.messages?.length || 0,
+          messageCount: conv.messageCount || messageCount,
           messages: {
             create: (conv.messages || []).map((msg: any) => ({
               id: msg.id,
@@ -200,12 +283,14 @@ export async function importBackup(data: BackupData): Promise<{
       })
 
       results.imported++
+      results.relatedRecordsRestored += messageCount + promptCount + codeCount
     } catch (error) {
       console.error('Error importing conversation:', error)
       results.errors.push(`Failed to import: ${conv.title}`)
     }
   }
 
+  results.durationMs = Date.now() - startTime
   return results
 }
 

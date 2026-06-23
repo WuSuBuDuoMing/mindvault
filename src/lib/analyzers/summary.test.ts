@@ -64,6 +64,41 @@ describe('generateSummary', () => {
     assert.ok(result.summary.length > 0)
     assert.ok(result.keywords.length > 0)
   })
+
+  it('should include conversationType and confidence in result', () => {
+    const messages = [
+      { role: 'user', content: 'Help me debug this React component that calls an API endpoint with TypeScript types.' },
+      { role: 'assistant', content: 'Let me help you fix the bug in your React component. The function needs proper TypeScript types for the API response.' },
+    ]
+    const result = generateSummary(messages)
+    assert.ok(result.conversationType.length > 0)
+    assert.ok(result.confidence >= 0)
+    assert.ok(result.confidence <= 1)
+  })
+
+  it('should detect translation conversation type', () => {
+    const messages = [
+      { role: 'user', content: 'Please translate this article from English to Chinese. The translation should be natural and fluent.' },
+      { role: 'assistant', content: 'I will provide a translation of the article. Here is the localized Chinese version:' },
+    ]
+    const result = generateSummary(messages)
+    assert.strictEqual(result.conversationType, 'translation')
+  })
+
+  it('should detect security conversation type', () => {
+    const messages = [
+      { role: 'user', content: 'Please analyze the security vulnerabilities in this code and check for XSS and CSRF injection attacks.' },
+      { role: 'assistant', content: 'Let me perform a security audit. I found several vulnerabilities including authentication issues.' },
+    ]
+    const result = generateSummary(messages)
+    assert.strictEqual(result.conversationType, 'security')
+  })
+
+  it('should have zero confidence for empty conversation', () => {
+    const result = generateSummary([])
+    assert.strictEqual(result.confidence, 0)
+    assert.strictEqual(result.conversationType, 'general')
+  })
 })
 
 describe('extractKeywords (summary)', () => {

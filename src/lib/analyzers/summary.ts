@@ -4,6 +4,7 @@
  * Generates concise summaries from conversation content using local rules.
  * Extracts the main topic, identifies conversation type, and provides a
  * structured summary suitable for the knowledge base.
+ * Enhanced with additional conversation types and improved topic extraction.
  */
 
 /**
@@ -14,19 +15,25 @@ export interface SummaryResult {
   summary: string
   /** Top keywords extracted from conversation content. */
   keywords: string[]
+  /** Detected conversation type (e.g. "code", "writing", "research"). */
+  conversationType: string
+  /** Confidence score for the detected type (0-1). */
+  confidence: number
 }
 
 /**
  * Generate a summary and extract keywords from conversation messages.
  *
  * @param messages - Array of messages with `role` and `content` fields
- * @returns A {@link SummaryResult} containing the summary text and keyword list
+ * @returns A {@link SummaryResult} containing the summary text, keywords, type, and confidence
  */
 export function generateSummary(messages: { role: string; content: string }[]): SummaryResult {
   if (messages.length === 0) {
     return {
       summary: 'Empty conversation',
       keywords: [],
+      conversationType: 'general',
+      confidence: 0,
     }
   }
 
@@ -38,19 +45,20 @@ export function generateSummary(messages: { role: string; content: string }[]): 
     .filter(m => m.role === 'assistant' || m.role === 'claude')
     .map(m => m.content)
 
-  const summary = createSummaryText(userMessages, assistantMessages)
+  const { type, score } = detectConversationTypeWithScore(userMessages, assistantMessages)
+  const summary = createSummaryText(userMessages, assistantMessages, type)
   const keywords = extractKeywords([...userMessages, ...assistantMessages])
+  const confidence = Math.min(1, score / 5)
 
-  return { summary, keywords }
+  return { summary, keywords, conversationType: type, confidence }
 }
 
-function createSummaryText(userMessages: string[], assistantMessages: string[]): string {
+function createSummaryText(userMessages: string[], assistantMessages: string[], conversationType: string): string {
   if (userMessages.length === 0 && assistantMessages.length === 0) {
     return 'No messages in conversation'
   }
 
   const mainTopic = extractMainTopic(userMessages[0] || '')
-  const conversationType = detectConversationType(userMessages, assistantMessages)
 
   const parts: string[] = []
 
@@ -66,6 +74,10 @@ function createSummaryText(userMessages: string[], assistantMessages: string[]):
     planning: 'Planning and strategy',
     design: 'Design and creative work',
     data: 'Data analysis and processing',
+    translation: 'Translation and localization',
+    DevOps: 'DevOps and infrastructure',
+    security: 'Security analysis',
+    database: 'Database design and optimization',
     general: 'General conversation',
   }
 
@@ -110,7 +122,12 @@ function extractMainTopic(message: string): string {
   return topic
 }
 
-function detectConversationType(userMessages: string[], assistantMessages: string[]): string {
+/**
+ * Detect the conversation type with a confidence score.
+ *
+ * @returns Object with `type` string and `score` (match count) for confidence calculation
+ */
+function detectConversationTypeWithScore(userMessages: string[], assistantMessages: string[]): { type: string; score: number } {
   const allContent = [...userMessages, ...assistantMessages].join(' ').toLowerCase()
 
   // Code-related (highest priority for Claude users)
@@ -122,7 +139,7 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     '代码', '函数', '修复', '实现', '组件', '接口',
   ]
   const codeScore = codeIndicators.filter(w => allContent.includes(w)).length
-  if (codeScore >= 3) return 'code'
+  if (codeScore >= 3) return { type: 'code', score: codeScore }
 
   // Writing-related
   const writingIndicators = [
@@ -130,7 +147,8 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     'content', 'copywriting', 'editorial', 'narrative',
     '写作', '文章', '故事', '内容',
   ]
-  if (writingIndicators.filter(w => allContent.includes(w)).length >= 2) return 'writing'
+  const writingScore = writingIndicators.filter(w => allContent.includes(w)).length
+  if (writingScore >= 2) return { type: 'writing', score: writingScore }
 
   // Research-related
   const researchIndicators = [
@@ -138,7 +156,8 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     'survey', 'methodology', 'findings', 'literature',
     '研究', '分析', '调查',
   ]
-  if (researchIndicators.filter(w => allContent.includes(w)).length >= 2) return 'research'
+  const researchScore = researchIndicators.filter(w => allContent.includes(w)).length
+  if (researchScore >= 2) return { type: 'research', score: researchScore }
 
   // Learning-related
   const learningIndicators = [
@@ -146,7 +165,8 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     'explain', 'what is', 'how to', 'why does',
     '学习', '课程', '教程', '解释',
   ]
-  if (learningIndicators.filter(w => allContent.includes(w)).length >= 2) return 'learning'
+  const learningScore = learningIndicators.filter(w => allContent.includes(w)).length
+  if (learningScore >= 2) return { type: 'learning', score: learningScore }
 
   // Planning-related
   const planningIndicators = [
@@ -154,7 +174,8 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     'milestone', 'schedule', 'timeline', 'project',
     '计划', '目标', '策略', '路线图',
   ]
-  if (planningIndicators.filter(w => allContent.includes(w)).length >= 2) return 'planning'
+  const planningScore = planningIndicators.filter(w => allContent.includes(w)).length
+  if (planningScore >= 2) return { type: 'planning', score: planningScore }
 
   // Design-related
   const designIndicators = [
@@ -162,7 +183,8 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     'figma', 'prototype', 'layout', 'typography', 'logo',
     '设计', '界面', '原型',
   ]
-  if (designIndicators.filter(w => allContent.includes(w)).length >= 2) return 'design'
+  const designScore = designIndicators.filter(w => allContent.includes(w)).length
+  if (designScore >= 2) return { type: 'design', score: designScore }
 
   // Data-related
   const dataIndicators = [
@@ -170,9 +192,47 @@ function detectConversationType(userMessages: string[], assistantMessages: strin
     'chart', 'graph', 'statistics', 'metrics', 'dashboard',
     '数据', '分析', '可视化',
   ]
-  if (dataIndicators.filter(w => allContent.includes(w)).length >= 2) return 'data'
+  const dataScore = dataIndicators.filter(w => allContent.includes(w)).length
+  if (dataScore >= 2) return { type: 'data', score: dataScore }
 
-  return 'general'
+  // Translation-related
+  const translationIndicators = [
+    'translate', 'translation', 'interpret', 'localization',
+    'language', '翻译', '翻译成', '译文',
+  ]
+  const translationScore = translationIndicators.filter(w => allContent.includes(w)).length
+  if (translationScore >= 2) return { type: 'translation', score: translationScore }
+
+  // DevOps-related
+  const devopsIndicators = [
+    'deploy', 'deployment', 'ci/cd', 'pipeline', 'infrastructure',
+    'server', 'hosting', 'nginx', 'container', 'orchestrat',
+    'terraform', 'ansible', 'aws', 'azure', 'gcp',
+  ]
+  const devopsScore = devopsIndicators.filter(w => allContent.includes(w)).length
+  if (devopsScore >= 2) return { type: 'DevOps', score: devopsScore }
+
+  // Security-related
+  const securityIndicators = [
+    'security', 'vulnerability', 'encryption', 'authentication',
+    'authorization', 'xss', 'csrf', 'injection', 'firewall',
+    '安全', '漏洞', '加密', '认证',
+  ]
+  const securityScore = securityIndicators.filter(w => allContent.includes(w)).length
+  if (securityScore >= 2) return { type: 'security', score: securityScore }
+
+  return { type: 'general', score: 0 }
+}
+
+/**
+ * Detect the conversation type from message content.
+ *
+ * @param userMessages - Array of user message content strings
+ * @param assistantMessages - Array of assistant message content strings
+ * @returns The detected conversation type string
+ */
+function detectConversationType(userMessages: string[], assistantMessages: string[]): string {
+  return detectConversationTypeWithScore(userMessages, assistantMessages).type
 }
 
 /**

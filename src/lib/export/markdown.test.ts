@@ -11,6 +11,9 @@ import {
   exportPromptsToHTML,
   exportCodeSnippetsToHTML,
   generateExportFilename,
+  exportConversation,
+  exportPrompts,
+  exportCodeSnippets,
 } from './markdown'
 
 describe('exportConversationToMarkdown', () => {
@@ -365,5 +368,70 @@ describe('generateExportFilename', () => {
     const filename = generateExportFilename('Snippets', 'code-snippets', 'json')
     assert.ok(filename.startsWith('code-snippets-'))
     assert.ok(filename.endsWith('.json'))
+  })
+})
+
+describe('exportConversation (unified)', () => {
+  it('should export as markdown by default', () => {
+    const data = {
+      title: 'Test Conv',
+      createdAt: new Date('2024-01-01'),
+      messages: [{ role: 'user', content: 'Hello' }],
+    }
+    const result = exportConversation(data)
+    assert.strictEqual(result.format, 'md')
+    assert.strictEqual(result.contentType, 'conversation')
+    assert.ok(result.content.includes('# Test Conv'))
+    assert.ok(result.filename.endsWith('.md'))
+  })
+
+  it('should export as JSON', () => {
+    const data = {
+      title: 'JSON Conv',
+      createdAt: new Date('2024-01-01'),
+      messages: [{ role: 'user', content: 'Hello' }],
+    }
+    const result = exportConversation(data, 'json')
+    assert.strictEqual(result.format, 'json')
+    const parsed = JSON.parse(result.content)
+    assert.strictEqual(parsed.conversation.title, 'JSON Conv')
+  })
+
+  it('should export as HTML', () => {
+    const data = {
+      title: 'HTML Conv',
+      createdAt: new Date('2024-01-01'),
+      messages: [{ role: 'user', content: 'Hello' }],
+    }
+    const result = exportConversation(data, 'html')
+    assert.strictEqual(result.format, 'html')
+    assert.ok(result.content.includes('<!DOCTYPE html>'))
+  })
+})
+
+describe('exportPrompts (unified)', () => {
+  it('should export prompts as markdown', () => {
+    const prompts = [{ title: 'Test Prompt', content: 'Do something', tags: 'coding' }]
+    const result = exportPrompts(prompts, 'md')
+    assert.strictEqual(result.format, 'md')
+    assert.ok(result.content.includes('Test Prompt'))
+    assert.ok(result.content.includes('Do something'))
+  })
+
+  it('should export prompts as JSON', () => {
+    const prompts = [{ title: 'Test', content: 'Content', isFavorite: true }]
+    const result = exportPrompts(prompts, 'json')
+    const parsed = JSON.parse(result.content)
+    assert.strictEqual(parsed.totalCount, 1)
+  })
+})
+
+describe('exportCodeSnippets (unified)', () => {
+  it('should export code snippets as markdown', () => {
+    const snippets = [{ language: 'python', code: 'print("hi")', description: 'Hello' }]
+    const result = exportCodeSnippets(snippets, 'md')
+    assert.strictEqual(result.format, 'md')
+    assert.ok(result.content.includes('```python'))
+    assert.ok(result.content.includes('print("hi")'))
   })
 })

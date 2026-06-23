@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 
 /**
- * Inline copy of buildFuzzyRegex for testing without db dependency.
+ * Inline copy of buildFuzzyRegex and highlightQuery for testing without db dependency.
  * This tests the pure function logic without Prisma imports.
  */
 function buildFuzzyRegex(query: string): RegExp {
@@ -18,6 +18,13 @@ function buildFuzzyRegex(query: string): RegExp {
 
   const combined = patterns.map((p) => `(${p})`).join('.*')
   return new RegExp(combined, 'i')
+}
+
+function highlightQuery(text: string, query: string): string {
+  if (!text || !query) return text || ''
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(${escaped})`, 'gi')
+  return text.replace(regex, '<mark>$1</mark>')
 }
 
 describe('buildFuzzyRegex', () => {
@@ -74,5 +81,37 @@ describe('buildFuzzyRegex', () => {
     const regex = buildFuzzyRegex('test')
     assert.ok(regex.test('test'))
     assert.ok(regex.test('a test here'))
+  })
+})
+
+describe('highlightQuery', () => {
+  it('should wrap matching text with <mark> tags', () => {
+    const result = highlightQuery('Hello World', 'world')
+    assert.strictEqual(result, 'Hello <mark>world</mark>')
+  })
+
+  it('should be case insensitive', () => {
+    const result = highlightQuery('TypeScript is great', 'typescript')
+    assert.strictEqual(result, '<mark>TypeScript</mark> is great')
+  })
+
+  it('should highlight all occurrences', () => {
+    const result = highlightQuery('test this test that test', 'test')
+    assert.strictEqual(result, '<mark>test</mark> this <mark>test</mark> that <mark>test</mark>')
+  })
+
+  it('should return original text when no match', () => {
+    const result = highlightQuery('Hello World', 'xyz')
+    assert.strictEqual(result, 'Hello World')
+  })
+
+  it('should handle empty input', () => {
+    assert.strictEqual(highlightQuery('', 'test'), '')
+    assert.strictEqual(highlightQuery('text', ''), 'text')
+  })
+
+  it('should escape special regex chars in query', () => {
+    const result = highlightQuery('price is $5.00 (USD)', '$5.00')
+    assert.strictEqual(result, 'price is <mark>$5.00</mark> (USD)')
   })
 })

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { extractCodeBlocks, getLanguageColor } from './code'
+import { extractCodeBlocks, extractCodeBlocksWithStats, getLanguageColor } from './code'
 
 describe('extractCodeBlocks', () => {
   it('should extract markdown code blocks with language', () => {
@@ -79,5 +79,41 @@ describe('getLanguageColor', () => {
 
   it('should return default color for empty string', () => {
     assert.strictEqual(getLanguageColor(''), '#6b7280')
+  })
+})
+
+describe('extractCodeBlocksWithStats', () => {
+  it('should return blocks and stats together', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: 'Here is some Python:\n```python\ndef hello():\n    print("hi")\n    return True\n```\n\nAnd some JavaScript:\n```js\nconst x = 42;\nconsole.log(x);\n```',
+      },
+    ]
+    const [blocks, stats] = extractCodeBlocksWithStats(messages)
+    assert.strictEqual(blocks.length, 2)
+    assert.strictEqual(stats.totalBlocks, 2)
+    assert.strictEqual(stats.withLanguage, 2)
+    assert.ok(stats.languageDistribution['python'] >= 1)
+    assert.ok(stats.languageDistribution['javascript'] >= 1)
+  })
+
+  it('should count auto-detected blocks', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: 'Check this out:\n```\nSELECT * FROM users WHERE id = 1;\n```',
+      },
+    ]
+    const [blocks, stats] = extractCodeBlocksWithStats(messages)
+    assert.strictEqual(blocks.length, 1)
+    assert.strictEqual(stats.autoDetected, 1)
+    assert.strictEqual(stats.withLanguage, 1) // detected as SQL
+  })
+
+  it('should handle empty messages', () => {
+    const [blocks, stats] = extractCodeBlocksWithStats([])
+    assert.strictEqual(blocks.length, 0)
+    assert.strictEqual(stats.totalBlocks, 0)
   })
 })

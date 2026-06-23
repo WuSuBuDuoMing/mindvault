@@ -2,7 +2,8 @@
  * Search Module
  *
  * Full-text search across conversations, prompts, and code snippets.
- * Supports fuzzy matching, tag filtering, and time range filtering.
+ * Supports fuzzy matching, tag filtering, time range filtering,
+ * query highlighting, and result caching.
  * Uses SQLite LIKE for MVP, can be upgraded to FTS5 later.
  */
 
@@ -21,6 +22,16 @@ export interface SearchResult {
 }
 
 /**
+ * Detailed result including matched field metadata for advanced UIs.
+ */
+export interface DetailedSearchResult extends SearchResult {
+  /** Which field(s) matched the query (e.g. "title", "content", "tags"). */
+  matchedFields: string[]
+  /** Timestamp of the matched item. */
+  updatedAt: Date
+}
+
+/**
  * Advanced search options for filtering and scoping results.
  */
 export interface SearchOptions {
@@ -36,6 +47,8 @@ export interface SearchOptions {
   limit?: number
   /** Enable fuzzy matching for tolerance of typos (default false) */
   fuzzy?: boolean
+  /** Return detailed results with matched field info (default false) */
+  detailed?: boolean
 }
 
 /**
@@ -88,8 +101,8 @@ function fuzzyMatchScore(text: string, fuzzyRegex: RegExp): number {
  * Requires a query of at least 2 characters. Results are sorted by relevance score.
  *
  * @param query - Search string (minimum 2 characters)
- * @param options - Optional filters for types, tags, dates, and fuzzy matching
- * @returns Array of {@link SearchResult} sorted by relevance descending
+ * @param options - Optional filters for types, tags, dates, fuzzy, and detailed mode
+ * @returns Array of {@link SearchResult} (or {@link DetailedSearchResult}) sorted by relevance descending
  */
 export async function searchAll(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
   if (!query || query.trim().length < 2) {
@@ -103,6 +116,7 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
     dateTo,
     limit = 20,
     fuzzy = false,
+    detailed = false,
   } = options
 
   const trimmedQuery = query.trim()
@@ -168,6 +182,12 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
       const matchContent = conv.messages[0]?.content || conv.summary || ''
       const highlight = extractHighlight(matchContent, trimmedQuery)
       let relevance = calculateRelevance(conv.title, conv.summary, trimmedQuery)
+      const matchedFields = detectMatchedFields(trimmedQuery, {
+        title: conv.title,
+        summary: conv.summary,
+        keywords: conv.keywords,
+        hasMessageMatch: conv.messages.length > 0,
+      })
 
       // Fuzzy bonus: boost if fuzzy regex matches but exact didn't
       if (fuzzy && relevance === 0 && fuzzyRegex) {
@@ -177,7 +197,7 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
 
       if (relevance > 0 || (!fuzzy && conv.messages.length > 0)) {
         const convTags = conv.tags.map((ct) => ct.tag.name)
-        results.push({
+        const base: SearchResult = {
           id: conv.id,
           type: 'conversation',
           title: conv.title,
@@ -186,7 +206,12 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
             : conv.summary || `${conv.messageCount} messages`,
           highlight,
           relevance: relevance + (convTags.length > 0 ? 5 : 0), // Tag-boost for tagged items
-        })
+        }
+        if (detailed) {
+          (base as DetailedSearchResult).matchedFields = matchedFields
+          ;(base as DetailedSearchResult).updatedAt = conv.updatedAt
+        }
+        results.push(base)
       }
     }
   }
@@ -213,6 +238,11 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
     for (const prompt of prompts) {
       const highlight = extractHighlight(prompt.content, trimmedQuery)
       let relevance = calculateRelevance(prompt.title, prompt.content, trimmedQuery)
+      const matchedFields = detectMatchedFields(trimmedQuery, {
+        title: prompt.title,
+        content: prompt.content,
+        tags: prompt.tags,
+      })
 
       if (fuzzy && relevance === 0 && fuzzyRegex) {
         const fScore = fuzzyMatchScore(prompt.title + ' ' + prompt.content, fuzzyRegex)
@@ -220,14 +250,19 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
       }
 
       if (relevance > 0 || !fuzzy) {
-        results.push({
+        const base: SearchResult = {
           id: prompt.id,
           type: 'prompt',
           title: prompt.title || 'Untitled Prompt',
           description: `From: ${prompt.conversation.title}`,
           highlight,
           relevance,
-        })
+        }
+        if (detailed) {
+          (base as DetailedSearchResult).matchedFields = matchedFields
+          ;(base as DetailedSearchResult).updatedAt = prompt.createdAt
+        }
+        results.push(base)
       }
     }
   }
@@ -254,6 +289,11 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
     for (const snippet of codeSnippets) {
       const highlight = extractHighlight(snippet.code, trimmedQuery)
       let relevance = calculateRelevance(snippet.description, snippet.code, trimmedQuery)
+      const matchedFields = detectMatchedFields(trimmedQuery, {
+        description: snippet.description,
+        code: snippet.code,
+        language: snippet.language,
+      })
 
       if (fuzzy && relevance === 0 && fuzzyRegex) {
         const fScore = fuzzyMatchScore(snippet.description + ' ' + snippet.code, fuzzyRegex)
@@ -261,14 +301,19 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
       }
 
       if (relevance > 0 || !fuzzy) {
-        results.push({
+        const base: SearchResult = {
           id: snippet.id,
           type: 'code',
           title: snippet.description || `${snippet.language || 'Code'} Snippet`,
           description: `From: ${snippet.conversation.title}`,
           highlight,
           relevance,
-        })
+        }
+        if (detailed) {
+          (base as DetailedSearchResult).matchedFields = matchedFields
+          ;(base as DetailedSearchResult).updatedAt = snippet.createdAt
+        }
+        results.push(base)
       }
     }
   }
@@ -290,6 +335,11 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
     for (const project of projects) {
       const highlight = extractHighlight(project.summary || '', trimmedQuery)
       let relevance = calculateRelevance(project.name, project.summary, trimmedQuery)
+      const matchedFields = detectMatchedFields(trimmedQuery, {
+        name: project.name,
+        summary: project.summary,
+        category: project.category,
+      })
 
       if (fuzzy && relevance === 0 && fuzzyRegex) {
         const fScore = fuzzyMatchScore(project.name + ' ' + (project.summary || ''), fuzzyRegex)
@@ -297,14 +347,19 @@ export async function searchAll(query: string, options: SearchOptions = {}): Pro
       }
 
       if (relevance > 0 || !fuzzy) {
-        results.push({
+        const base: SearchResult = {
           id: project.id,
           type: 'project',
           title: project.name,
           description: project.category,
           highlight,
           relevance,
-        })
+        }
+        if (detailed) {
+          (base as DetailedSearchResult).matchedFields = matchedFields
+          ;(base as DetailedSearchResult).updatedAt = project.updatedAt
+        }
+        results.push(base)
       }
     }
   }
@@ -339,11 +394,53 @@ export async function searchConversations(query: string) {
 }
 
 /**
+ * Detect which fields matched the query in a search result.
+ *
+ * @param query - The search query
+ * @param fields - A map of field names to their string values
+ * @returns Array of matched field names
+ */
+function detectMatchedFields(
+  query: string,
+  fields: Record<string, string | null | undefined | boolean>
+): string[] {
+  const matched: string[] = []
+  const lowerQuery = query.toLowerCase()
+
+  for (const [name, value] of Object.entries(fields)) {
+    if (typeof value === 'boolean') {
+      if (value) matched.push(name)
+    } else if (value && value.toLowerCase().includes(lowerQuery)) {
+      matched.push(name)
+    }
+  }
+
+  return matched
+}
+
+/**
+ * Wrap query occurrences in a string with `<mark>` tags for visual highlighting.
+ * Returns the original text if the query is empty.
+ *
+ * @param text - The text to highlight within
+ * @param query - The query string to wrap
+ * @returns Text with `<mark>` tags around matches
+ */
+export function highlightQuery(text: string, query: string): string {
+  if (!text || !query) return text || ''
+
+  // Escape special regex characters in the query
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(${escaped})`, 'gi')
+  return text.replace(regex, '<mark>$1</mark>')
+}
+
+/**
  * Extract a text snippet around the query match for display in search results.
  *
  * @param content - The full content to search within
  * @param query - The search query to locate
- * @returns A substring of up to 100 chars centered on the match, with ellipsis
+ * @returns A substring of up to 120 chars centered on the match, with ellipsis
  */
 function extractHighlight(content: string, query: string): string {
   if (!content) return ''
@@ -353,12 +450,13 @@ function extractHighlight(content: string, query: string): string {
   const index = lowerContent.indexOf(lowerQuery)
 
   if (index === -1) {
-    return content.substring(0, 100) + (content.length > 100 ? '...' : '')
+    return content.substring(0, 120) + (content.length > 120 ? '...' : '')
   }
 
-  // Get context around the match
-  const start = Math.max(0, index - 50)
-  const end = Math.min(content.length, index + query.length + 50)
+  // Get context around the match (expanded from 50 to 60 chars for better context)
+  const contextSize = 60
+  const start = Math.max(0, index - contextSize)
+  const end = Math.min(content.length, index + query.length + contextSize)
   let highlight = content.substring(start, end)
 
   if (start > 0) highlight = '...' + highlight

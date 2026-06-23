@@ -3,6 +3,7 @@
  *
  * Extracts code blocks from conversation messages.
  * Supports markdown code blocks with language tags and auto-detection.
+ * Enhanced with additional language patterns and alias normalization.
  */
 
 /**
@@ -15,6 +16,20 @@ export interface ExtractedCode {
   code: string
   /** Surrounding text that describes what the code does. */
   description: string | null
+}
+
+/**
+ * Summary statistics for extracted code blocks.
+ */
+export interface CodeExtractionStats {
+  /** Total number of code blocks found. */
+  totalBlocks: number
+  /** Number of blocks with a detected language. */
+  withLanguage: number
+  /** Frequency map of detected languages. */
+  languageDistribution: Record<string, number>
+  /** Number of blocks that were auto-detected (no explicit language tag). */
+  autoDetected: number
 }
 
 /**
@@ -43,6 +58,47 @@ export function extractCodeBlocks(messages: { role: string; content: string }[])
   }
 
   return codeBlocks
+}
+
+/**
+ * Extract code blocks and return them along with extraction statistics.
+ *
+ * @param messages - Array of messages with `role` and `content` fields
+ * @returns Tuple of extracted code blocks and extraction statistics
+ */
+export function extractCodeBlocksWithStats(
+  messages: { role: string; content: string }[]
+): [ExtractedCode[], CodeExtractionStats] {
+  const codeBlocks = extractCodeBlocks(messages)
+  const languageDistribution: Record<string, number> = {}
+  let autoDetected = 0
+
+  for (const block of codeBlocks) {
+    const lang = block.language || 'unknown'
+    languageDistribution[lang] = (languageDistribution[lang] || 0) + 1
+  }
+
+  // Count auto-detected: blocks where the original language was null but detection filled it in
+  for (const message of messages) {
+    const codeBlockPattern = /```(\w*)\n?([\s\S]*?)```/g
+    let match
+    while ((match = codeBlockPattern.exec(message.content)) !== null) {
+      const rawLang = match[1]?.trim() || null
+      const code = match[2]?.trim()
+      if (code && code.length >= 15 && !rawLang) {
+        autoDetected++
+      }
+    }
+  }
+
+  const stats: CodeExtractionStats = {
+    totalBlocks: codeBlocks.length,
+    withLanguage: codeBlocks.filter(b => b.language !== null).length,
+    languageDistribution,
+    autoDetected,
+  }
+
+  return [codeBlocks, stats]
 }
 
 function extractCodeFromMessage(content: string): ExtractedCode[] {
@@ -81,20 +137,27 @@ function normalizeLanguage(lang: string | null): string | null {
     sh: 'bash',
     shell: 'bash',
     zsh: 'bash',
+    fish: 'bash',
     yml: 'yaml',
     md: 'markdown',
     'c#': 'csharp',
     cs: 'csharp',
     'c++': 'cpp',
+    cc: 'cpp',
+    cxx: 'cpp',
     rs: 'rust',
     kt: 'kotlin',
+    kts: 'kotlin',
     swift: 'swift',
     objective: 'objective-c',
     objc: 'objective-c',
     pgsql: 'postgresql',
     psql: 'postgresql',
+    postgres: 'postgresql',
     ps: 'powershell',
+    pwsh: 'powershell',
     dockerfile: 'docker',
+    docker-compose: 'docker',
     tf: 'terraform',
     hcl: 'terraform',
     prisma: 'prisma',
@@ -102,6 +165,29 @@ function normalizeLanguage(lang: string | null): string | null {
     gql: 'graphql',
     toml: 'toml',
     env: 'env',
+    vue: 'vue',
+    svelte: 'svelte',
+    astro: 'astro',
+    dart: 'dart',
+    sol: 'solidity',
+    sol: 'solidity',
+    ex: 'elixir',
+    exs: 'elixir',
+    erl: 'erlang',
+    r: 'r',
+    rmd: 'r',
+    lua: 'lua',
+    nim: 'nim',
+    zig: 'zig',
+    v: 'v',
+    vba: 'vba',
+    groovy: 'groovy',
+    gradle: 'groovy',
+    makefile: 'makefile',
+    cmake: 'cmake',
+    vim: 'vim',
+    tex: 'latex',
+    cls: 'latex',
   }
 
   return aliases[normalized] || normalized
@@ -194,6 +280,36 @@ function detectLanguage(code: string): string | null {
     return 'bash'
   }
 
+  // Go patterns
+  if (/\b(func |package |import |fmt\.|:=|goroutine|chan )\b/.test(code)) {
+    return 'go'
+  }
+
+  // Ruby patterns
+  if (/\b(def |end|require|include|class |module |puts |do \|)/.test(code) && /\bend\b/.test(code)) {
+    return 'ruby'
+  }
+
+  // PHP patterns
+  if (/<\?php|\$[a-z_]|\becho\b|->/.test(code) && /function\s+\w+/.test(code)) {
+    return 'php'
+  }
+
+  // Swift patterns
+  if (/\b(func |var |let |guard |if let |self\.|@IBOutlet|struct |class )\b/.test(code) && /->\s*\w+/.test(code)) {
+    return 'swift'
+  }
+
+  // Kotlin patterns
+  if (/\b(fun |val |var |when |data class |sealed class |companion object)\b/.test(code)) {
+    return 'kotlin'
+  }
+
+  // Lua patterns
+  if (/\b(local |function |end|require|print\(|if then)\b/.test(code) && !/\b(public|private)\b/.test(code)) {
+    return 'lua'
+  }
+
   // JSON patterns
   if (/^\s*[\[{]/.test(code) && /[\]}]\s*$/.test(code)) {
     try {
@@ -260,6 +376,30 @@ export function getLanguageColor(language: string | null): string {
     terraform: '#7b42bc',
     prisma: '#2d3748',
     graphql: '#e535ab',
+    ruby: '#cc342d',
+    php: '#777bb4',
+    swift: '#f05138',
+    kotlin: '#7f52ff',
+    scala: '#c22d41',
+    r: '#276dc3',
+    lua: '#000080',
+    dart: '#0175c2',
+    vue: '#41b883',
+    svelte: '#ff3e00',
+    elixir: '#6e4a7e',
+    erlang: '#b83998',
+    haskell: '#5e5086',
+    perl: '#39457e',
+    groovy: '#4298b8',
+    zig: '#ec915c',
+    nim: '#ffc200',
+    zig: '#ec915c',
+    latex: '#008080',
+    makefile: '#427819',
+    cmake: '#DA3434',
+    solidity: '#363636',
+    toml: '#9c4221',
+    powershell: '#012456',
   }
 
   return colors[language || ''] || '#6b7280'

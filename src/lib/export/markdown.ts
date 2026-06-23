@@ -3,6 +3,7 @@
  *
  * Export conversations, projects, prompts, and code snippets in
  * Markdown, JSON, and plain-text (PDF-ready HTML) formats.
+ * Enhanced with bulk export utilities and format selection helpers.
  */
 
 /**
@@ -61,6 +62,135 @@ export interface CodeSnippetExportData {
   description?: string | null
   createdAt?: Date
   conversationTitle?: string
+}
+
+/**
+ * Supported export format types.
+ */
+export type ExportFormat = 'md' | 'json' | 'html'
+
+/**
+ * Supported content types for export.
+ */
+export type ExportContentType = 'conversation' | 'project' | 'prompts' | 'code-snippets'
+
+/**
+ * Export result containing the formatted content and metadata.
+ */
+export interface ExportResult {
+  /** The exported content as a string. */
+  content: string
+  /** The format used for export. */
+  format: ExportFormat
+  /** The content type that was exported. */
+  contentType: ExportContentType
+  /** Generated filename for the export. */
+  filename: string
+}
+
+/**
+ * Export a conversation in the specified format, returning a structured result.
+ *
+ * @param data - The conversation data to export
+ * @param format - The export format (md, json, html)
+ * @returns An {@link ExportResult} with content, format, and filename
+ */
+export function exportConversation(
+  data: ConversationExportData,
+  format: ExportFormat = 'md'
+): ExportResult {
+  const content = format === 'json'
+    ? exportConversationToJSON(data)
+    : format === 'html'
+    ? exportConversationToHTML(data)
+    : exportConversationToMarkdown(data)
+
+  return {
+    content,
+    format,
+    contentType: 'conversation',
+    filename: generateExportFilename(data.title, 'conversation', format),
+  }
+}
+
+/**
+ * Export prompts in the specified format.
+ *
+ * @param prompts - The prompt data to export
+ * @param format - The export format (md, json, html)
+ * @returns An {@link ExportResult} with content, format, and filename
+ */
+export function exportPrompts(
+  prompts: PromptExportData[],
+  format: ExportFormat = 'json'
+): ExportResult {
+  let content: string
+  if (format === 'json') {
+    content = exportPromptsToJSON(prompts)
+  } else if (format === 'html') {
+    content = exportPromptsToHTML(prompts)
+  } else {
+    // Markdown format for prompts
+    const lines: string[] = ['# Prompt Library', '', `Exported on ${new Date().toLocaleDateString()} | Total: ${prompts.length} prompts`, '']
+    for (const p of prompts) {
+      if (p.title) lines.push(`## ${p.title}`)
+      if (p.conversationTitle) lines.push(`*From: ${p.conversationTitle}*`)
+      if (p.tags) lines.push(`**Tags:** ${p.tags}`)
+      if (p.isFavorite) lines.push('**Favorite:** Yes')
+      lines.push('')
+      lines.push('```')
+      lines.push(p.content)
+      lines.push('```')
+      lines.push('')
+    }
+    content = lines.join('\n')
+  }
+
+  return {
+    content,
+    format,
+    contentType: 'prompts',
+    filename: generateExportFilename('prompt-library', 'prompts', format),
+  }
+}
+
+/**
+ * Export code snippets in the specified format.
+ *
+ * @param snippets - The code snippet data to export
+ * @param format - The export format (md, json, html)
+ * @returns An {@link ExportResult} with content, format, and filename
+ */
+export function exportCodeSnippets(
+  snippets: CodeSnippetExportData[],
+  format: ExportFormat = 'json'
+): ExportResult {
+  let content: string
+  if (format === 'json') {
+    content = exportCodeSnippetsToJSON(snippets)
+  } else if (format === 'html') {
+    content = exportCodeSnippetsToHTML(snippets)
+  } else {
+    // Markdown format for code snippets
+    const lines: string[] = ['# Code Snippets Library', '', `Exported on ${new Date().toLocaleDateString()} | Total: ${snippets.length} snippets`, '']
+    for (const s of snippets) {
+      lines.push(`## ${s.description || `${s.language || 'Code'} Snippet`}`)
+      if (s.conversationTitle) lines.push(`*From: ${s.conversationTitle}*`)
+      lines.push('')
+      lines.push('```' + (s.language || ''))
+      lines.push(s.code)
+      lines.push('```')
+      lines.push('')
+    }
+    content = lines.join('\n')
+  }
+
+  return {
+    content,
+    format,
+    contentType: 'code-snippets',
+    filename: generateExportFilename('code-snippets', 'code-snippets', format),
+  }
 }
 
 // ─── Markdown Export ─────────────────────────────────────────────────────────
